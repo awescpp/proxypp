@@ -3,6 +3,7 @@
 #include <array>
 #include <boost/asio.hpp>
 #include <boost/asio/co_spawn.hpp>
+#include <boost/core/ignore_unused.hpp>
 #include <boost/date_time.hpp>
 #include <boost/predef.h>
 #include <boost/system.hpp>
