@@ -4,6 +4,7 @@
   "builtin-baseline": "f6735d5aa1537081e8d425372ea7e585b0ad65e8",
   "dependencies": [
     "boost-asio",
+    "boost-beast",
     "boost-date-time",
     "boost-test",
     "cli11",

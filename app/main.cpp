@@ -1,5 +1,7 @@
 #include <CLI/CLI.hpp>
 
+#include "../src/tcp_server.h"
+
 struct GlobalOpts {
     bool verbose = false;
 };
@@ -46,13 +48,16 @@ int main(int argc, char **argv) {
 
     CLI11_PARSE(app, argc, argv);
 
+    asio::io_context io;
     if (app.got_subcommand(http)) {
-
+        auto server = std::make_shared<proxypp::TcpServer>(io.get_executor(), opts.http.bind, opts.http.port);
+        server->Run();
     }
 
     if (app.got_subcommand(socks)) {
-
     }
+
+    io.run();
 
     return 0;
 }

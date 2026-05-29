@@ -14,5 +14,7 @@
 #include <memory>
 #include <optional>
 #include <ranges>
+#include <spdlog/spdlog.h>
 #include <string>
+#include <string_view>
 #include <vector>
