@@ -37,6 +37,7 @@ module.exports = {
                 'deps',
                 'test',
                 'docs',
+                'version',
                 'ci'
             ]
         ],
@@ -77,6 +78,7 @@ module.exports = {
             'platform',
             'build',
             'test',
+            'version',
             'docs',
         ],
         allowCustomScopes: true,

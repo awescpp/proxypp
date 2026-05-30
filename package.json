@@ -1,11 +1,5 @@
 {
-  "name": "proxy-plus-plus",
-  "version": "1.0.0",
-  "description": "",
-  "license": "ISC",
-  "author": "awescpp",
   "type": "commonjs",
-  "main": "index.js",
   "scripts": {
     "co": "cz",
     "prepare": "simple-git-hooks",
