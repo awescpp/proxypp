@@ -1,11 +1,11 @@
 #pragma once
 
 #include <boost/beast.hpp>
-#include "common.h"
+#include "proxypp/common.h"
 
 using socket_t = boost::beast::tcp_stream;
 
-namespace proxypp {
+namespace proxypp ::core {
     class TcpServer : public std::enable_shared_from_this<TcpServer> {
 
     public:
@@ -18,4 +18,4 @@ namespace proxypp {
         std::string address_;
         std::size_t port_;
     };
-} // namespace proxypp
+} // namespace proxypp::core

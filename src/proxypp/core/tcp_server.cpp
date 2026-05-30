@@ -1,9 +1,10 @@
 #include "tcp_server.h"
+#include "proxypp/log/log.h"
 
-proxypp::TcpServer::TcpServer(asio::any_io_executor ex, std::string_view address, std::size_t port) :
+proxypp::core ::TcpServer::TcpServer(asio::any_io_executor ex, std::string_view address, std::size_t port) :
     acceptor_(ex), address_(address), port_(port) {}
 
-void proxypp::TcpServer::Run() {
+void proxypp::core::TcpServer::Run() {
 
     const tcp::endpoint ep{asio::ip::make_address(address_), static_cast<asio::ip::port_type>(port_)};
 
@@ -38,11 +39,6 @@ void proxypp::TcpServer::Run() {
                 if (ec_) {
                     co_return;
                 }
-
-                // make a session
             },
             asio::detached);
-
-
-    spdlog::info("TcpServer listening on {}:{}", address_, port_);
 }

@@ -38,6 +38,7 @@ module.exports = {
                 'test',
                 'docs',
                 'version',
+                'log',
                 'ci'
             ]
         ],

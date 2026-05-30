@@ -1,6 +1,7 @@
 #include <CLI/CLI.hpp>
-
-#include "../src/tcp_server.h"
+#include "proxypp/common.h"
+#include "proxypp/core/tcp_server.h"
+#include "proxypp/log/log.h"
 
 struct GlobalOpts {
     bool verbose = false;
@@ -28,6 +29,9 @@ int main(int argc, char **argv) {
     SetConsoleOutputCP(CP_UTF8);
 #endif
 
+    // init loggers
+    proxypp::log::Init();
+
     CLI::App app;
     app.name("proxy++");
     argv = app.ensure_utf8(argv);
@@ -50,7 +54,7 @@ int main(int argc, char **argv) {
 
     asio::io_context io;
     if (app.got_subcommand(http)) {
-        auto server = std::make_shared<proxypp::TcpServer>(io.get_executor(), opts.http.bind, opts.http.port);
+        auto server = std::make_shared<proxypp::core::TcpServer>(io.get_executor(), opts.http.bind, opts.http.port);
         server->Run();
     }
 
