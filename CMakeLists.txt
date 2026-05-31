@@ -10,17 +10,36 @@ find_package(CLI11 CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
 
+# proxypp::core
+add_library(proxypp_options INTERFACE)
+add_library(proxypp::options ALIAS proxypp_options)
+target_include_directories(proxypp_options INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_precompile_headers(proxypp_options INTERFACE src/proxypp/pch.h)
+target_compile_options(proxypp_options INTERFACE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+target_compile_definitions(proxypp_options INTERFACE
+        SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE
+        $<$<PLATFORM_ID:Windows>:_WIN32_WINNT=0x0A00>
+)
+target_link_libraries(proxypp_options INTERFACE Boost::asio Boost::beast spdlog::spdlog magic_enum::magic_enum)
+
+# proxypp::log
 add_library(proxypp_log STATIC src/proxypp/log/log.cpp)
 add_library(proxypp::log ALIAS proxypp_log)
-target_compile_definitions(proxypp_log PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
-target_link_libraries(proxypp_log PUBLIC spdlog::spdlog magic_enum::magic_enum)
+target_link_libraries(proxypp_log PUBLIC proxypp::options)
 
-add_executable(proxy++ app/main.cpp src/proxypp/core/tcp_server.cpp src/proxypp/http/http_proxy_session.cpp)
-target_include_directories(proxy++ PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_precompile_headers(proxy++ PRIVATE src/proxypp/pch.h)
-target_compile_options(proxy++ PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
-target_compile_definitions(proxy++ PRIVATE _WIN32_WINNT=0x0A00)
-target_link_libraries(proxy++ PRIVATE CLI11::CLI11 proxypp::log Boost::asio Boost::beast Boost::date_time)
+# proxypp::http
+add_library(proxypp_http STATIC src/proxypp/http/http_proxy_session.cpp)
+add_library(proxypp::http ALIAS proxypp_http)
+target_link_libraries(proxypp_http PUBLIC proxypp::options proxypp::log)
+
+# proxypp::core
+add_library(proxypp_core STATIC src/proxypp/core/tcp_server.cpp)
+add_library(proxypp::core ALIAS proxypp_core)
+target_link_libraries(proxypp_core PUBLIC proxypp::options proxypp::http proxypp::log)
+
+# proxy++ executable
+add_executable(proxy++ app/main.cpp)
+target_link_libraries(proxy++ PRIVATE CLI11::CLI11 proxypp::core)
 
 include(CTest)
 if (BUILD_TESTING)
