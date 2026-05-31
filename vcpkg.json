@@ -8,6 +8,7 @@
     "boost-date-time",
     "boost-test",
     "cli11",
-    "spdlog"
+    "spdlog",
+    "magic-enum"
   ]
 }
