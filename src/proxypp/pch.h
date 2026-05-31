@@ -8,6 +8,7 @@
 #include <boost/predef.h>
 #include <boost/system.hpp>
 #include <chrono>
+#include <coroutine>
 #include <cstddef>
 #include <format>
 #include <iostream>

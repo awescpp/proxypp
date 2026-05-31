@@ -31,6 +31,7 @@ int main(int argc, char **argv) {
 
     // init loggers
     proxypp::log::Init();
+    proxypp::log::SetAllLevels(spdlog::level::debug);
 
     CLI::App app;
     app.name("proxy++");

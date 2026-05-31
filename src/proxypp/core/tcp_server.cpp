@@ -1,4 +1,6 @@
 #include "tcp_server.h"
+
+#include "proxypp/http/http_proxy_session.h"
 #include "proxypp/log/log.h"
 
 proxypp::core ::TcpServer::TcpServer(asio::any_io_executor ex, std::string_view address, std::size_t port) :
@@ -31,14 +33,23 @@ void proxypp::core::TcpServer::Run() {
     }
 
     auto self = shared_from_this();
+
     asio::co_spawn(
             acceptor_.get_executor(),
             [self]() mutable -> asio::awaitable<void> {
-                auto [ec_, socket] = co_await self->acceptor_.async_accept(asio::as_tuple(asio::use_awaitable));
+                for (;;) {
+                    auto [ec_, client_sock] =
+                            co_await self->acceptor_.async_accept(asio::as_tuple(asio::use_awaitable));
+                    if (ec_) {
+                        LOG_CORE_ERROR("accept connection error, {}", ec_.message());
+                        continue;
+                    }
 
-                if (ec_) {
-                    co_return;
+                    auto http_proxy_session = std::make_shared<http::HttpProxySession>(std::move(client_sock));
+                    http_proxy_session->Run();
                 }
             },
             asio::detached);
+
+    LOG_CORE_INFO("proxy++ running on {}:{}", address_, port_);
 }
