@@ -6,6 +6,7 @@
     "boost-asio",
     "boost-beast",
     "boost-date-time",
+    "boost-url",
     "boost-test",
     "cli11",
     "spdlog",

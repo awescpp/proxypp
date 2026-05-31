@@ -78,7 +78,7 @@ module.exports = {
             'http',
             'config',
             'platform',
-            'build',
+            'cmake',
             'test',
             'version',
             'docs',

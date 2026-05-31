@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-find_package(Boost CONFIG REQUIRED COMPONENTS asio beast date_time)
+find_package(Boost CONFIG REQUIRED COMPONENTS asio beast date_time url)
 find_package(CLI11 CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
@@ -20,7 +20,7 @@ target_compile_definitions(proxypp_options INTERFACE
         SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE
         $<$<PLATFORM_ID:Windows>:_WIN32_WINNT=0x0A00>
 )
-target_link_libraries(proxypp_options INTERFACE Boost::asio Boost::beast spdlog::spdlog magic_enum::magic_enum)
+target_link_libraries(proxypp_options INTERFACE Boost::asio Boost::beast Boost::url spdlog::spdlog magic_enum::magic_enum)
 
 # proxypp::log
 add_library(proxypp_log STATIC src/proxypp/log/log.cpp)
