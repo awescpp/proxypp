@@ -22,6 +22,8 @@ namespace proxypp::log {
 
 // region Core Module Loggers
 
+#define LOG_CORE_TRACE_ENABLED() (::proxypp::log::detail::core()->should_log(spdlog::level::trace))
+
 #define LOG_CORE_TRACE(...) SPDLOG_LOGGER_TRACE(::proxypp::log::detail::core(), __VA_ARGS__)
 
 #define LOG_CORE_DEBUG(...) SPDLOG_LOGGER_DEBUG(::proxypp::log::detail::core(), __VA_ARGS__)
@@ -33,6 +35,8 @@ namespace proxypp::log {
 // endregion
 
 // region Http Module Loggers
+
+#define LOG_HTTP_TRACE_ENABLED() (::proxypp::log::detail::http()->should_log(spdlog::level::trace))
 
 #define LOG_HTTP_TRACE(...) SPDLOG_LOGGER_TRACE(::proxypp::log::detail::http(), __VA_ARGS__)
 

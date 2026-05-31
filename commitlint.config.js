@@ -74,6 +74,7 @@ module.exports = {
         scopes: [
             'core',
             'net',
+            'log',
             'http',
             'config',
             'platform',
