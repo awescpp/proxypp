@@ -39,6 +39,7 @@ module.exports = {
                 'docs',
                 'version',
                 'log',
+                'format',
                 'ci'
             ]
         ],
@@ -81,6 +82,7 @@ module.exports = {
             'cmake',
             'test',
             'version',
+            'format',
             'docs',
         ],
         allowCustomScopes: true,
