@@ -47,17 +47,21 @@ void proxypp::core::TcpServer::Run()
     [self]() mutable -> asio::awaitable<void> {
       for(;;)
         {
-          auto [ec_, client_sock] = co_await self->acceptor_.async_accept(
-            asio::as_tuple(asio::use_awaitable));
-          if(ec_)
+          auto [accept_ec, client_sock]
+            = co_await self->acceptor_.async_accept(
+              asio::as_tuple(asio::use_awaitable));
+          if(accept_ec)
             {
-              LOG_CORE_ERROR("accept connection error, {}", ec_.message());
+              LOG_CORE_ERROR("accept connection error, {}",
+                             accept_ec.message());
               continue;
             }
 
-          auto http_proxy_session
-            = std::make_shared<http::HttpProxySession>(std::move(client_sock));
-          http_proxy_session->Run();
+          LOG_CORE_DEBUG("accept a connection from {}:{}");
+
+          co_await std::make_shared<http::HttpProxySession>(
+            std::move(client_sock))
+            ->Run();
         }
     },
     asio::detached);

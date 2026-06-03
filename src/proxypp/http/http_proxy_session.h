@@ -32,11 +32,11 @@ namespace proxypp::http
     };
 
     using RequestHeader = http_::request_header<>;
-    using EmptyRequest = http_::request<http_::empty_body>;
+    using EmptyBodyRequest = http_::request<http_::empty_body>;
 
-    asio::awaitable<void> DoHttpForward();
+    asio::awaitable<void> DoHttpForward(const RequestHeader &);
 
-    asio::awaitable<std::optional<RequestHeader>> ParseClientRequestHeader();
+    asio::awaitable<std::optional<RequestHeader>> ReadClientRequestHeader();
 
     std::optional<RemoteInfo> ParseRemoteInfo(const RequestHeader &);
 
@@ -45,10 +45,10 @@ namespace proxypp::http
 
     asio::awaitable<bool> ConnectRemote(const tcp::resolver::results_type &);
 
-    RequestHeader
-    BuildRemoteRequestHeader(const RequestHeader &, const RemoteInfo &);
+    EmptyBodyRequest
+    BuildRemoteRequest(const RequestHeader &, const RemoteInfo &);
 
-    asio::awaitable<bool> WriteRemoteRequestHeader(const RequestHeader &);
+    asio::awaitable<bool> WriteRemoteRequest(const EmptyBodyRequest &);
 
     asio::awaitable<void> RelayClientToRemote();
 
@@ -60,9 +60,11 @@ namespace proxypp::http
 
     socket_t client_sock_;
     socket_t remote_sock_;
-    tcp::resolver resolver_;
-    beast::flat_buffer client_buffer_;
-    beast::flat_buffer remote_buffer_;
+    beast::flat_buffer client_read_buffer_;
+    std::vector<std::byte> forward_buffer_
+      = std::vector<std::byte>(64 * 1024); // client->proxy->remote
+    std::vector<std::byte> backward_buffer_
+      = std::vector<std::byte>(64 * 1024); // remote->proxy->client
   };
 
 } // namespace proxypp::http

@@ -31,7 +31,7 @@ struct AppOpts
 int main(int argc, char **argv)
 {
 #if BOOST_OS_WINDOWS
-  SetConsoleOutputCP(CP_UTF8);
+  SetConsoleOutputCP(936);
 #endif
 
   // init loggers
