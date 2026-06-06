@@ -28,6 +28,9 @@ namespace proxypp::http
     using RequestHeader = http_::request_header<>;
     using ResponseHeader = http_::response_header<>;
 
+    using EmptyBodyRequest = http_::request<http_::empty_body>;
+    using EmptyBodyResponse = http_::response<http_::empty_body>;
+
     struct RemoteInfo
     {
       std::string scheme;
@@ -43,6 +46,12 @@ namespace proxypp::http
       bool connected = false;
     };
 
+    struct ForwardPeer
+    {
+      std::string name;
+      socket_t& sock;
+    };
+
     enum class ExchangeResult
     {
       Continue,
@@ -53,33 +62,61 @@ namespace proxypp::http
     asio::awaitable<ExchangeResult> HandleOneExchange();
 
     asio::awaitable<std::optional<RequestHeader>>
-    ReadClientRequestHeader(RequestParser& request_parser);
+    ReadClientRequestHeader(RequestParser& client_request_parser);
 
     std::optional<RemoteInfo>
-    ParseRemoteInfo(const RequestHeader& request_header);
+    ParseRemoteInfo(const RequestHeader& client_request_header);
 
-    RequestHeader BuildRemoteRequestHeader(const RequestHeader& request_header,
-                                           const RemoteInfo& remote_info);
+    RequestHeader
+    BuildRemoteRequestHeader(const RequestHeader& client_request_header,
+                             const RemoteInfo& remote_info);
+
+    asio::awaitable<std::optional<tcp::resolver::results_type>>
+    ResolveRemote(const RemoteInfo& remote_info);
+
+    asio::awaitable<bool>
+    ConnectRemote(const tcp::resolver::results_type& endpoints);
 
     asio::awaitable<bool> EnsureRemoteConnected(const RemoteInfo& remote_info);
 
     asio::awaitable<bool>
-    WriteRequestHeader(const RequestHeader& request_header);
-
-    asio::awaitable<bool> ForwardRequestBody(RequestParser& request_parser);
-
-    asio::awaitable<std::optional<ResponseHeader>>
-    ReadResponseHeader(ResponseParser& response_parser);
+    WriteRemoteRequestHeader(const RequestHeader& remote_request_header);
 
     asio::awaitable<bool>
-    WriteResponseHeader(const ResponseHeader& remote_response_header);
+    ForwardRequestBody(RequestParser& client_request_parser);
 
-    asio::awaitable<bool> ForwardResponseBody(ResponseParser& response_parser);
+    asio::awaitable<bool>
+    ForwardRequestBodyByContentLength(std::size_t content_length);
 
-    bool ShouldKeepAlive(const RequestHeader& client_request_header,
-                         const ResponseHeader& remote_response_header) const;
+    asio::awaitable<bool> ForwardRequestBodyByChunked();
+
+    asio::awaitable<std::optional<ResponseHeader>>
+    ReadRemoteResponseHeader(ResponseParser& remote_response_parser);
+
+    asio::awaitable<bool> WriteRemoteResponseHeaderToClient(
+      const ResponseHeader& remote_response_header);
+
+    asio::awaitable<bool> ForwardResponseBody(ResponseParser& remote_response_parser);
+
+    asio::awaitable<bool>
+    ForwardResponseBodyByContentLength(std::size_t content_length);
+
+    asio::awaitable<bool>
+    ForwardResponseBodyByChunked(ResponseParser& response_parser);
+
+    static asio::awaitable<bool>
+    ForwardExactly(beast::flat_buffer& header_buffer,
+                   std::vector<std::byte>& body_buffer, ForwardPeer from_peer,
+                   ForwardPeer target_peer, std::size_t content_length);
+
+    bool ShouldKeepAlive(const RequestParser& client_request_parser,
+                         const ResponseParser& remote_response_parser) const;
 
     void CloseRemote();
+
+    void CloseClient();
+
+    void ResetRemoteState();
 
     void Close();
 
@@ -95,7 +132,7 @@ namespace proxypp::http
     std::vector<std::byte> backward_buffer_
       = std::vector<std::byte>(64 * 1024); // remote->proxy->client
 
-    RemoteConnectionState remote_connection_state_;
+    RemoteConnectionState remote_state_;
   };
 
 } // namespace proxypp::http

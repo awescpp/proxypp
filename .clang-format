@@ -1,13 +1,13 @@
 BasedOnStyle: GNU
 AlignAfterOpenBracket: Align
 AllowAllParametersOfDeclarationOnNextLine: false
-AllowShortBlocksOnASingleLine: true
+AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: true
 AllowShortFunctionsOnASingleLine: All
 # Uncommenting these lines will sometimes result in lines following an
 # if(){} or for(){} block being attached to the end of the block.
-AllowShortIfStatementsOnASingleLine: true
-AllowShortLoopsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
 AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakAfterReturnType: None
 BreakBeforeBraces: Custom
