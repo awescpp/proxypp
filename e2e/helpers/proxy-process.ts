@@ -29,6 +29,9 @@ export async function startProxyProcess(port: number): Promise<ProxyProcess> {
   const stdoutChunks: string[] = []
   const stderrChunks: string[] = []
 
+  subprocess.stdout?.setEncoding('utf-8')
+  subprocess.stderr?.setEncoding('utf-8')
+
   subprocess.stdout?.on('data', (chunk: string) => {
     stdoutChunks.push(chunk)
   })
@@ -56,6 +59,8 @@ export async function startProxyProcess(port: number): Promise<ProxyProcess> {
       ].join('\n'),
     )
   }
+
+  console.log(`proxy++ is listening on ${host}:${port}`)
 
   return {
     host,
@@ -106,7 +111,7 @@ async function waitUntilListening(
 ): Promise<void> {
   const deadline = Date.now() + 5_000
   while (Date.now() < deadline) {
-    if (subprocess.exitCode !== undefined) {
+    if (subprocess.exitCode !== null) {
       throw new Error(
         `proxy++ exited before opening its listening port, exit code: ${subprocess.exitCode}`,
       )
@@ -142,7 +147,7 @@ function canConnect(host: string, port: number): Promise<boolean> {
 }
 
 async function stopSubprocess(subprocess: ReturnType<typeof execa>) {
-  if (subprocess.exitCode !== undefined) {
+  if (subprocess.exitCode !== null) {
     await subprocess
     return
   }
@@ -154,7 +159,7 @@ async function stopSubprocess(subprocess: ReturnType<typeof execa>) {
     delay(2_000).then(() => false),
   ])
 
-  if (!exited && subprocess.exitCode === undefined) {
+  if (!exited && subprocess.exitCode === null) {
     subprocess.kill('SIGKILL')
     await subprocess
   }
