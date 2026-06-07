@@ -2,15 +2,28 @@
   "type": "commonjs",
   "scripts": {
     "co": "cz",
+    "typecheck:e2e": "tsc --project tsconfig.e2e.json",
+    "test:e2e": "vitest run --config vitest.config.ts",
+    "test:e2e:watch": "vitest --config vitest.config.ts",
+    "format": "prettier --write \"e2e/**/*.ts\" \"*.ts\" \"*.json\" \"*.md\"",
+    "format:check": "prettier --check \"e2e/**/*.ts\" \"*.ts\" \"*.json\" \"*.md\"",
     "prepare": "simple-git-hooks",
     "lint:commit": "commitlint --edit"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.0.1",
     "@commitlint/config-conventional": "^21.0.1",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.9.2",
+    "axios": "^1.17.0",
     "commitizen": "^4.3.1",
     "cz-git": "^1.13.1",
-    "simple-git-hooks": "^2.13.1"
+    "execa": "^9.6.1",
+    "express": "^5.2.1",
+    "prettier": "^3.8.3",
+    "simple-git-hooks": "^2.13.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
   },
   "config": {
     "commitizen": {

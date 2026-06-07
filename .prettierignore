@@ -1,0 +1,7 @@
+build/
+cmake-build-*/
+vcpkg_installed/
+node_modules/
+coverage/
+src/
+tests/
