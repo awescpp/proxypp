@@ -96,7 +96,8 @@ namespace proxypp::http
     asio::awaitable<bool> WriteRemoteResponseHeaderToClient(
       const ResponseHeader& remote_response_header);
 
-    asio::awaitable<bool> ForwardResponseBody(ResponseParser& remote_response_parser);
+    asio::awaitable<bool>
+    ForwardResponseBody(ResponseParser& remote_response_parser);
 
     asio::awaitable<bool>
     ForwardResponseBodyByContentLength(std::size_t content_length);
@@ -104,9 +105,14 @@ namespace proxypp::http
     asio::awaitable<bool>
     ForwardResponseBodyByChunked(ResponseParser& response_parser);
 
+    [[deprecated]]
     static asio::awaitable<bool>
     ForwardExactly(beast::flat_buffer& header_buffer,
                    std::vector<std::byte>& body_buffer, ForwardPeer from_peer,
+                   ForwardPeer target_peer, std::size_t content_length);
+
+    static asio::awaitable<bool>
+    ForwardExactly(beast::flat_buffer& read_buffer, ForwardPeer from_peer,
                    ForwardPeer target_peer, std::size_t content_length);
 
     bool ShouldKeepAlive(const RequestParser& client_request_parser,
@@ -127,8 +133,10 @@ namespace proxypp::http
     beast::flat_buffer client_read_buffer_;
     beast::flat_buffer remote_read_buffer_;
 
+    [[deprecated]]
     std::vector<std::byte> forward_buffer_
       = std::vector<std::byte>(64 * 1024); // client->proxy->remote
+    [[deprecated]]
     std::vector<std::byte> backward_buffer_
       = std::vector<std::byte>(64 * 1024); // remote->proxy->client
 

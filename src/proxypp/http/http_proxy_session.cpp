@@ -339,8 +339,8 @@ namespace proxypp::http
     std::size_t content_length)
   {
     co_return co_await ForwardExactly(
-      client_read_buffer_, forward_buffer_, {"client", client_sock_},
-      {"remote", remote_sock_}, content_length);
+      client_read_buffer_, {"client", client_sock_}, {"remote", remote_sock_},
+      content_length);
   }
 
   asio::awaitable<bool> HttpProxySession::ForwardRequestBodyByChunked()
@@ -441,8 +441,8 @@ namespace proxypp::http
     std::size_t content_length)
   {
     co_return co_await ForwardExactly(
-      remote_read_buffer_, backward_buffer_, {"remote", remote_sock_},
-      {"client", client_sock_}, content_length);
+      remote_read_buffer_, {"remote", remote_sock_}, {"client", client_sock_},
+      content_length);
   }
 
   asio::awaitable<bool> HttpProxySession::ForwardResponseBodyByChunked(
@@ -520,6 +520,72 @@ namespace proxypp::http
               }
             bytes_sent += bytes_written;
           }
+      }
+
+    co_return true;
+  }
+
+  asio::awaitable<bool>
+  HttpProxySession::ForwardExactly(beast::flat_buffer& read_buffer,
+                                   ForwardPeer from_peer,
+                                   ForwardPeer target_peer,
+                                   std::size_t content_length)
+  {
+    std::size_t bytes_sent = 0;
+    while(bytes_sent < content_length)
+      {
+        const auto bytes_remaining = content_length - bytes_sent;
+
+        // write until read_buffer is empty, then read bytes from source to
+        // fill read_buffer
+        if(read_buffer.size() == 0)
+          {
+            constexpr std::size_t read_block_size = 64 * 1024;
+            const auto bytes_to_read
+              = std::min<std::size_t>(bytes_remaining, read_block_size);
+            auto writable_buffer = read_buffer.prepare(bytes_to_read);
+            const auto [ec_read, bytes_read]
+              = co_await from_peer.sock.async_read_some(
+                writable_buffer, asio::as_tuple(asio::use_awaitable));
+            if(ec_read)
+              {
+                LOG_HTTP_ERROR("read body from {} failed, {}", from_peer.name,
+                               ec_read.message());
+                co_return false;
+              }
+            if(bytes_read == 0)
+              {
+                LOG_HTTP_ERROR("read 0 bytes from {}, connection may be have "
+                               "closed prematurely",
+                               from_peer.name);
+                co_return false;
+              }
+            read_buffer.commit(bytes_read);
+          }
+
+        const auto bytes_to_write
+          = std::min<std::size_t>(bytes_remaining, read_buffer.size());
+
+        const auto [ec_write, bytes_written] = co_await asio::async_write(
+          target_peer.sock,
+          beast::buffers_prefix(bytes_to_write, read_buffer.data()),
+          asio::as_tuple(asio::use_awaitable));
+        if(ec_write)
+          {
+            LOG_HTTP_ERROR("write body to {} failed, {}", target_peer.name,
+                           ec_write.message());
+            co_return false;
+          }
+        if(bytes_written != bytes_to_write)
+          {
+            LOG_HTTP_ERROR(
+              "write body to {} incomplete, expected {}， actual {}",
+              target_peer.name, bytes_to_write, bytes_written);
+            co_return false;
+          }
+
+        read_buffer.consume(bytes_written);
+        bytes_sent += bytes_written;
       }
 
     co_return true;
