@@ -310,9 +310,7 @@ namespace proxypp::http
 
     if(client_request.chunked())
       {
-        LOG_HTTP_ERROR(
-          "chunked http request forwarding has not been implemented yet");
-        co_return false;
+        co_return co_await ForwardRequestBodyByChunked();
       }
 
     if(has_transfer_encoding)
@@ -345,8 +343,8 @@ namespace proxypp::http
 
   asio::awaitable<bool> HttpProxySession::ForwardRequestBodyByChunked()
   {
-    // TODO: implement later
-    co_return false;
+    co_return co_await ForwardChunked(
+      client_read_buffer_, {"client", client_sock_}, {"remote", remote_sock_});
   }
 
   asio::awaitable<std::optional<HttpProxySession::ResponseHeader>>
@@ -410,9 +408,8 @@ namespace proxypp::http
     const auto& remote_response = remote_response_parser.get();
     if(remote_response.chunked())
       {
-        LOG_HTTP_ERROR(
-          "chunked http response forwarding has not been implemented yet");
-        co_return false;
+        co_return co_await ForwardResponseBodyByChunked(
+          remote_response_parser);
       }
 
     const auto has_transfer_encoding
@@ -448,7 +445,8 @@ namespace proxypp::http
   asio::awaitable<bool> HttpProxySession::ForwardResponseBodyByChunked(
     ResponseParser& response_parser)
   {
-    co_return false;
+    co_return co_await ForwardChunked(
+      remote_read_buffer_, {"remote", remote_sock_}, {"client", client_sock_});
   }
 
   asio::awaitable<bool> HttpProxySession::ForwardExactly(
@@ -599,6 +597,272 @@ namespace proxypp::http
            && remote_response_parser.keep_alive()
            && client_sock_.socket().is_open()
            && remote_sock_.socket().is_open();
+  }
+
+  std::optional<std::size_t>
+  HttpProxySession::FindCrlf(const beast::flat_buffer& buffer)
+  {
+    const auto begin = asio::buffers_begin(buffer.data());
+    const auto end = asio::buffers_end(buffer.data());
+    constexpr std::array crlf{'\r', '\n'};
+    const auto it = std::search(begin, end, crlf.begin(), crlf.end());
+    if(it == end)
+      {
+        return std::nullopt;
+      }
+    return static_cast<std::size_t>(std::distance(begin, it));
+  }
+
+  std::string
+  HttpProxySession::BufferPrefixToString(const beast::flat_buffer& buffer,
+                                         std::size_t length)
+  {
+    std::string result;
+    result.resize(length);
+    asio::buffer_copy(asio::buffer(result.data(), result.size()),
+                      beast::buffers_prefix(length, buffer.data()));
+    return result;
+  }
+
+  std::optional<std::size_t>
+  HttpProxySession::ParseChunkSizeLine(std::string_view line)
+  {
+    const auto semicolon_pos = line.find(';');
+    const auto size_text = line.substr(0, semicolon_pos);
+    if(size_text.empty())
+      {
+        return std::nullopt;
+      }
+    std::size_t size = 0;
+    for(const char ch : size_text)
+      {
+        unsigned digit = 0;
+        if(ch >= '0' && ch <= '9')
+          {
+            digit = static_cast<unsigned>(ch - '0');
+          }
+        else if(ch >= 'a' && ch <= 'f')
+          {
+            digit = static_cast<unsigned>(ch - 'a' + 10);
+          }
+        else if(ch >= 'A' && ch <= 'F')
+          {
+            digit = static_cast<unsigned>(ch - 'A' + 10);
+          }
+        else
+          {
+            return std::nullopt;
+          }
+
+        constexpr auto max = std::numeric_limits<std::size_t>::max();
+        if(size > (max - digit) / 16)
+          {
+            return std::nullopt;
+          }
+
+        size = size * 16 + digit;
+      }
+
+    return size;
+  }
+
+  bool HttpProxySession::StartsWithCrlf(const beast::flat_buffer& buffer)
+  {
+    if(buffer.size() < 2)
+      {
+        return false;
+      }
+
+    std::array<char, 2> bytes{};
+
+    asio::buffer_copy(asio::buffer(bytes),
+                      beast::buffers_prefix(2, buffer.data()));
+
+    return bytes[0] == '\r' && bytes[1] == '\n';
+  }
+
+  asio::awaitable<std::optional<std::size_t>>
+  HttpProxySession::ReadSomeFromPeer(beast::flat_buffer& buffer,
+                                     ForwardPeer from_peer)
+  {
+    auto mutable_buffer = buffer.prepare(64 * 1024);
+    const auto [ec_read, bytes_read] = co_await from_peer.sock.async_read_some(
+      mutable_buffer, asio::as_tuple(asio::use_awaitable));
+    if(ec_read)
+      {
+        LOG_HTTP_ERROR("read from {} failed, {}", from_peer.name,
+                       ec_read.message());
+        co_return std::nullopt;
+      }
+    if(bytes_read == 0)
+      {
+        LOG_HTTP_ERROR(
+          "read 0 bytes from {}, connection may be closed prematurely");
+        co_return std::nullopt;
+      }
+
+    buffer.commit(bytes_read);
+
+    co_return bytes_read;
+  }
+  asio::awaitable<std::optional<std::size_t>>
+  HttpProxySession::WriteToPeer(beast::flat_buffer& buffer,
+                                ForwardPeer target_peer,
+                                std::size_t bytes_to_write)
+  {
+    const auto [ec_write, bytes_written] = co_await asio::async_write(
+      target_peer.sock, beast::buffers_prefix(bytes_to_write, buffer.cdata()),
+      asio::as_tuple(asio::use_awaitable));
+    if(ec_write)
+      {
+        LOG_HTTP_ERROR("write to {} failed, {}", target_peer.name,
+                       ec_write.message());
+        co_return std::nullopt;
+      }
+
+    if(bytes_written != bytes_to_write)
+      {
+        LOG_HTTP_ERROR("write data to {} incomplete, expected {}, actual {}",
+                       target_peer.name, bytes_to_write, bytes_written);
+        co_return std::nullopt;
+      }
+
+    buffer.consume(bytes_written);
+
+    co_return bytes_written;
+  }
+
+  asio::awaitable<bool>
+  HttpProxySession::ForwardChunked(beast::flat_buffer& read_buffer,
+                                   ForwardPeer from_peer,
+                                   ForwardPeer target_peer)
+  {
+    auto state = ChunkedState::ReadChunkSizeLine;
+    std::size_t chunk_size_line_length = 0;
+    std::size_t chunk_size = 0;
+    std::size_t chunk_bytes_remaining = 0;
+
+    while(state != ChunkedState::Completed)
+      {
+        switch(state)
+          {
+            case ChunkedState::ReadChunkSizeLine: {
+              const auto crlf_pos = FindCrlf(read_buffer);
+              if(crlf_pos.has_value())
+                {
+                  chunk_size_line_length = *crlf_pos;
+                  state = ChunkedState::ParseChunkSizeLine;
+                  break;
+                }
+              const auto read_bytes
+                = co_await ReadSomeFromPeer(read_buffer, from_peer);
+              if(!read_bytes.has_value() || *read_bytes == 0)
+                {
+                  co_return false;
+                }
+              break;
+            }
+            case ChunkedState::ParseChunkSizeLine: {
+              const auto line
+                = BufferPrefixToString(read_buffer, chunk_size_line_length);
+              const auto chunk_body_size = ParseChunkSizeLine(line);
+              if(chunk_body_size.has_value())
+                {
+                  chunk_size = *chunk_body_size;
+                  state = ChunkedState::ForwardChunkSizeLine;
+                  break;
+                }
+              co_return false;
+            }
+            case ChunkedState::ForwardChunkSizeLine: {
+              const auto bytes_to_write = chunk_size_line_length + 2;
+              const auto bytes_written = co_await WriteToPeer(
+                read_buffer, target_peer, bytes_to_write);
+              if(!bytes_written.has_value())
+                {
+                  co_return false;
+                }
+              if(chunk_size == 0)
+                {
+                  state = ChunkedState::ForwardTrailers;
+                  break;
+                }
+              if(chunk_size > std::numeric_limits<std::size_t>::max() - 2)
+                {
+                  // TODO: how to build a num that larger than std::size_t ?
+                  LOG_HTTP_ERROR("data to write that is too large {}",
+                                 chunk_size);
+                  co_return false;
+                }
+              chunk_bytes_remaining = chunk_size + 2;
+              state = ChunkedState::ForwardChunkDataWithCrlf;
+              break;
+            }
+            case ChunkedState::ForwardChunkDataWithCrlf: {
+              // read some bytes if no more bytes to write
+              if(read_buffer.size() == 0)
+                {
+                  const auto read_bytes
+                    = co_await ReadSomeFromPeer(read_buffer, from_peer);
+                  if(!read_bytes.has_value())
+                    {
+                      co_return false;
+                    }
+                  break;
+                }
+              const auto bytes_to_forward = std::min<std::size_t>(
+                chunk_bytes_remaining, read_buffer.size());
+              const auto bytes_written = co_await WriteToPeer(
+                read_buffer, target_peer, bytes_to_forward);
+              if(!bytes_written.has_value())
+                {
+                  co_return false;
+                }
+              chunk_bytes_remaining -= *bytes_written;
+              if(chunk_bytes_remaining == 0)
+                {
+                  state = ChunkedState::ReadChunkSizeLine;
+                }
+              break;
+            }
+            case ChunkedState::ForwardTrailers: {
+              // 0\r\n
+              // X-Checksum: a1b2c3d4e5f6\r\n  <-- Trailers start here
+              // X-Rows-Processed: 42\r\n
+              // \r\n
+              const auto crlf_pos = FindCrlf(read_buffer);
+              if(!crlf_pos.has_value())
+                {
+                  const auto bytes_read
+                    = co_await ReadSomeFromPeer(read_buffer, from_peer);
+                  if(!bytes_read.has_value())
+                    {
+                      co_return false;
+                    }
+                  break;
+                }
+
+              const auto trailer_line_length = *crlf_pos;
+
+              const auto bytes_written = co_await WriteToPeer(
+                read_buffer, target_peer, trailer_line_length + 2);
+
+              if(!bytes_written.has_value())
+                {
+                  co_return false;
+                }
+
+              if(trailer_line_length == 0)
+                {
+                  state = ChunkedState::Completed;
+                }
+              break;
+            }
+            case ChunkedState::Completed: {
+              break;
+            }
+          }
+      }
   }
 
   void HttpProxySession::CloseRemote()

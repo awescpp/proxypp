@@ -58,6 +58,19 @@ namespace proxypp::http
       Close
     };
 
+    enum class ChunkedState
+    {
+      ReadChunkSizeLine,
+      ParseChunkSizeLine,
+      ForwardChunkSizeLine,
+
+      ForwardChunkDataWithCrlf,
+
+      ForwardTrailers,
+
+      Completed
+    };
+
   private:
     asio::awaitable<ExchangeResult> HandleOneExchange();
 
@@ -117,6 +130,26 @@ namespace proxypp::http
 
     bool ShouldKeepAlive(const RequestParser& client_request_parser,
                          const ResponseParser& remote_response_parser) const;
+
+    std::optional<std::size_t> FindCrlf(const beast::flat_buffer& buffer);
+
+    std::string
+    BufferPrefixToString(const beast::flat_buffer& buffer, std::size_t length);
+
+    std::optional<std::size_t> ParseChunkSizeLine(std::string_view line);
+
+    bool StartsWithCrlf(const beast::flat_buffer& buffer);
+
+    asio::awaitable<std::optional<std::size_t>>
+    ReadSomeFromPeer(beast::flat_buffer& buffer, ForwardPeer from_peer);
+
+    asio::awaitable<std::optional<std::size_t>>
+    WriteToPeer(beast::flat_buffer& buffer, ForwardPeer target_peer,
+                std::size_t bytes_to_write);
+
+    asio::awaitable<bool>
+    ForwardChunked(beast::flat_buffer& read_buffer, ForwardPeer from_peer,
+                   ForwardPeer target_peer);
 
     void CloseRemote();
 
