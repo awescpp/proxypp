@@ -10,6 +10,7 @@ export interface ProxyProcess {
   readonly host: string
   readonly port: number
   stop(): Promise<void>
+  printLog(): void
 }
 
 export async function startProxyProcess(port: number): Promise<ProxyProcess> {
@@ -40,6 +41,14 @@ export async function startProxyProcess(port: number): Promise<ProxyProcess> {
     stderrChunks.push(chunk)
   })
 
+  subprocess.on('error', (error) => {
+    stderrChunks.push(`[proxy++ error]: ${error.message}`)
+  })
+
+  subprocess.on('exit', (code, signal) => {
+    stdoutChunks.push(`[proxy++ exit] code ${code} signal ${signal}`)
+  })
+
   try {
     await waitUntilListening(subprocess, host, port)
   } catch (error) {
@@ -68,6 +77,14 @@ export async function startProxyProcess(port: number): Promise<ProxyProcess> {
     executable,
     stop() {
       return stopSubprocess(subprocess)
+    },
+    printLog() {
+      const stdout = stdoutChunks.join('') || '<empyt>'
+      const stderr = stderrChunks.join('') || '<empty>'
+      console.error('--------proxy++ stdout--------')
+      console.error(stdout)
+      console.error('--------proxy++ stderr--------')
+      console.error(stderr)
     },
   }
 }

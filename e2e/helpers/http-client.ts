@@ -1,11 +1,14 @@
-import axios, { AxiosInstance } from 'axios'
+import axios, { AxiosInstance, ResponseType } from 'axios'
 
 export interface CreateHttpProxyClientOptions {
   readonly proxyHost: string
   readonly proxyPort: number
+  readonly responseType?: ResponseType
 }
 
-export function createHttpProxyClient(options: CreateHttpProxyClientOptions): AxiosInstance {
+export function createHttpProxyClient(
+  options: CreateHttpProxyClientOptions,
+): AxiosInstance {
   return axios.create({
     proxy: {
       protocol: 'http',
@@ -16,5 +19,6 @@ export function createHttpProxyClient(options: CreateHttpProxyClientOptions): Ax
     // treat all status code as success
     validateStatus: () => true,
     maxRedirects: 0,
+    responseType: options?.responseType,
   })
 }
