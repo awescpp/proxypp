@@ -118,27 +118,12 @@ namespace proxypp::http
     asio::awaitable<bool>
     ForwardResponseBodyByChunked(ResponseParser& response_parser);
 
-    [[deprecated]]
-    static asio::awaitable<bool>
-    ForwardExactly(beast::flat_buffer& header_buffer,
-                   std::vector<std::byte>& body_buffer, ForwardPeer from_peer,
-                   ForwardPeer target_peer, std::size_t content_length);
-
-    static asio::awaitable<bool>
+    asio::awaitable<bool>
     ForwardExactly(beast::flat_buffer& read_buffer, ForwardPeer from_peer,
                    ForwardPeer target_peer, std::size_t content_length);
 
     bool ShouldKeepAlive(const RequestParser& client_request_parser,
                          const ResponseParser& remote_response_parser) const;
-
-    std::optional<std::size_t> FindCrlf(const beast::flat_buffer& buffer);
-
-    std::string
-    BufferPrefixToString(const beast::flat_buffer& buffer, std::size_t length);
-
-    std::optional<std::size_t> ParseChunkSizeLine(std::string_view line);
-
-    bool StartsWithCrlf(const beast::flat_buffer& buffer);
 
     asio::awaitable<std::optional<std::size_t>>
     ReadSomeFromPeer(beast::flat_buffer& buffer, ForwardPeer from_peer);
@@ -165,13 +150,6 @@ namespace proxypp::http
 
     beast::flat_buffer client_read_buffer_;
     beast::flat_buffer remote_read_buffer_;
-
-    [[deprecated]]
-    std::vector<std::byte> forward_buffer_
-      = std::vector<std::byte>(64 * 1024); // client->proxy->remote
-    [[deprecated]]
-    std::vector<std::byte> backward_buffer_
-      = std::vector<std::byte>(64 * 1024); // remote->proxy->client
 
     RemoteConnectionState remote_state_;
   };

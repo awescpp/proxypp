@@ -1,5 +1,6 @@
 #include "http_proxy_session.h"
 
+#include "http_message_utils.h"
 #include "proxypp/log/log.h"
 
 #include <boost/url.hpp>
@@ -449,80 +450,6 @@ namespace proxypp::http
       remote_read_buffer_, {"remote", remote_sock_}, {"client", client_sock_});
   }
 
-  asio::awaitable<bool> HttpProxySession::ForwardExactly(
-    beast::flat_buffer& header_buffer, std::vector<std::byte>& body_buffer,
-    ForwardPeer from_peer, ForwardPeer target_peer, std::size_t content_length)
-  {
-    std::size_t bytes_sent = 0;
-    while(bytes_sent < content_length)
-      {
-        const auto bytes_remaining = content_length - bytes_sent;
-        // drain the buffered body first
-        if(header_buffer.size() > 0)
-          {
-            const auto bytes_to_write
-              = std::min<std::size_t>(bytes_remaining, header_buffer.size());
-            const auto [ec_write, bytes_written] = co_await asio::async_write(
-              target_peer.sock,
-              // `read_buffer` is not a contiguous buffer, so
-              // `buffers_prefix` is used here to extract the first
-              // `bytes_to_write` bytes.
-              beast::buffers_prefix(bytes_to_write, header_buffer.data()),
-              asio::as_tuple(asio::use_awaitable));
-            if(ec_write)
-              {
-                LOG_HTTP_ERROR("write buffered body to {} failed, {}",
-                               target_peer.name, ec_write.message());
-                co_return false;
-              }
-            if(bytes_to_write != bytes_written)
-              {
-                LOG_HTTP_ERROR("write body to {} incomplete",
-                               target_peer.name);
-                co_return false;
-              }
-            header_buffer.consume(bytes_written);
-            bytes_sent += bytes_written;
-          }
-        else
-          {
-            // read request body from client
-            const auto bytes_to_read
-              = std::min<std::size_t>(bytes_remaining, body_buffer.size());
-            const auto [ec_read, bytes_read]
-              = co_await from_peer.sock.async_read_some(
-                asio::buffer(body_buffer, bytes_to_read),
-                asio::as_tuple(asio::use_awaitable));
-            if(ec_read)
-              {
-                LOG_HTTP_ERROR("read request body from {} failed, {}",
-                               from_peer.name, ec_read.message());
-                co_return false;
-              }
-            if(bytes_read == 0)
-              {
-                LOG_HTTP_ERROR("read 0 bytes from {}, {} connection "
-                               "may closed prematurely",
-                               from_peer.name, from_peer.name);
-                co_return false;
-              }
-
-            const auto [ec_write, bytes_written] = co_await asio::async_write(
-              target_peer.sock, asio::buffer(body_buffer, bytes_read),
-              asio::as_tuple(asio::use_awaitable));
-            if(ec_write)
-              {
-                LOG_HTTP_ERROR("write body to {} failed, {}", target_peer.name,
-                               ec_write.message());
-                co_return false;
-              }
-            bytes_sent += bytes_written;
-          }
-      }
-
-    co_return true;
-  }
-
   asio::awaitable<bool>
   HttpProxySession::ForwardExactly(beast::flat_buffer& read_buffer,
                                    ForwardPeer from_peer,
@@ -538,52 +465,26 @@ namespace proxypp::http
         // fill read_buffer
         if(read_buffer.size() == 0)
           {
-            constexpr std::size_t read_block_size = 64 * 1024;
-            const auto bytes_to_read
-              = std::min<std::size_t>(bytes_remaining, read_block_size);
-            auto writable_buffer = read_buffer.prepare(bytes_to_read);
-            const auto [ec_read, bytes_read]
-              = co_await from_peer.sock.async_read_some(
-                writable_buffer, asio::as_tuple(asio::use_awaitable));
-            if(ec_read)
+            const auto bytes_read
+              = co_await ReadSomeFromPeer(read_buffer, from_peer);
+            if(!bytes_read.has_value())
               {
-                LOG_HTTP_ERROR("read body from {} failed, {}", from_peer.name,
-                               ec_read.message());
                 co_return false;
               }
-            if(bytes_read == 0)
-              {
-                LOG_HTTP_ERROR("read 0 bytes from {}, connection may be have "
-                               "closed prematurely",
-                               from_peer.name);
-                co_return false;
-              }
-            read_buffer.commit(bytes_read);
           }
 
         const auto bytes_to_write
           = std::min<std::size_t>(bytes_remaining, read_buffer.size());
 
-        const auto [ec_write, bytes_written] = co_await asio::async_write(
-          target_peer.sock,
-          beast::buffers_prefix(bytes_to_write, read_buffer.data()),
-          asio::as_tuple(asio::use_awaitable));
-        if(ec_write)
+        const auto bytes_written
+          = co_await WriteToPeer(read_buffer, target_peer, bytes_to_write);
+
+        if(!bytes_written.has_value())
           {
-            LOG_HTTP_ERROR("write body to {} failed, {}", target_peer.name,
-                           ec_write.message());
-            co_return false;
-          }
-        if(bytes_written != bytes_to_write)
-          {
-            LOG_HTTP_ERROR(
-              "write body to {} incomplete, expected {}， actual {}",
-              target_peer.name, bytes_to_write, bytes_written);
             co_return false;
           }
 
-        read_buffer.consume(bytes_written);
-        bytes_sent += bytes_written;
+        bytes_sent += *bytes_written;
       }
 
     co_return true;
@@ -597,88 +498,6 @@ namespace proxypp::http
            && remote_response_parser.keep_alive()
            && client_sock_.socket().is_open()
            && remote_sock_.socket().is_open();
-  }
-
-  std::optional<std::size_t>
-  HttpProxySession::FindCrlf(const beast::flat_buffer& buffer)
-  {
-    const auto begin = asio::buffers_begin(buffer.data());
-    const auto end = asio::buffers_end(buffer.data());
-    constexpr std::array crlf{'\r', '\n'};
-    const auto it = std::search(begin, end, crlf.begin(), crlf.end());
-    if(it == end)
-      {
-        return std::nullopt;
-      }
-    return static_cast<std::size_t>(std::distance(begin, it));
-  }
-
-  std::string
-  HttpProxySession::BufferPrefixToString(const beast::flat_buffer& buffer,
-                                         std::size_t length)
-  {
-    std::string result;
-    result.resize(length);
-    asio::buffer_copy(asio::buffer(result.data(), result.size()),
-                      beast::buffers_prefix(length, buffer.data()));
-    return result;
-  }
-
-  std::optional<std::size_t>
-  HttpProxySession::ParseChunkSizeLine(std::string_view line)
-  {
-    const auto semicolon_pos = line.find(';');
-    const auto size_text = line.substr(0, semicolon_pos);
-    if(size_text.empty())
-      {
-        return std::nullopt;
-      }
-    std::size_t size = 0;
-    for(const char ch : size_text)
-      {
-        unsigned digit = 0;
-        if(ch >= '0' && ch <= '9')
-          {
-            digit = static_cast<unsigned>(ch - '0');
-          }
-        else if(ch >= 'a' && ch <= 'f')
-          {
-            digit = static_cast<unsigned>(ch - 'a' + 10);
-          }
-        else if(ch >= 'A' && ch <= 'F')
-          {
-            digit = static_cast<unsigned>(ch - 'A' + 10);
-          }
-        else
-          {
-            return std::nullopt;
-          }
-
-        constexpr auto max = std::numeric_limits<std::size_t>::max();
-        if(size > (max - digit) / 16)
-          {
-            return std::nullopt;
-          }
-
-        size = size * 16 + digit;
-      }
-
-    return size;
-  }
-
-  bool HttpProxySession::StartsWithCrlf(const beast::flat_buffer& buffer)
-  {
-    if(buffer.size() < 2)
-      {
-        return false;
-      }
-
-    std::array<char, 2> bytes{};
-
-    asio::buffer_copy(asio::buffer(bytes),
-                      beast::buffers_prefix(2, buffer.data()));
-
-    return bytes[0] == '\r' && bytes[1] == '\n';
   }
 
   asio::awaitable<std::optional<std::size_t>>
@@ -705,6 +524,7 @@ namespace proxypp::http
 
     co_return bytes_read;
   }
+
   asio::awaitable<std::optional<std::size_t>>
   HttpProxySession::WriteToPeer(beast::flat_buffer& buffer,
                                 ForwardPeer target_peer,
@@ -747,7 +567,7 @@ namespace proxypp::http
         switch(state)
           {
             case ChunkedState::ReadChunkSizeLine: {
-              const auto crlf_pos = FindCrlf(read_buffer);
+              const auto crlf_pos = details::FindCrlf(read_buffer);
               if(crlf_pos.has_value())
                 {
                   chunk_size_line_length = *crlf_pos;
@@ -763,9 +583,9 @@ namespace proxypp::http
               break;
             }
             case ChunkedState::ParseChunkSizeLine: {
-              const auto line
-                = BufferPrefixToString(read_buffer, chunk_size_line_length);
-              const auto chunk_body_size = ParseChunkSizeLine(line);
+              const auto line = details::BufferPrefixToString(
+                read_buffer, chunk_size_line_length);
+              const auto chunk_body_size = details::ParseChunkSizeLine(line);
               if(chunk_body_size.has_value())
                 {
                   chunk_size = *chunk_body_size;
@@ -830,7 +650,7 @@ namespace proxypp::http
               // X-Checksum: a1b2c3d4e5f6\r\n  <-- Trailers start here
               // X-Rows-Processed: 42\r\n
               // \r\n
-              const auto crlf_pos = FindCrlf(read_buffer);
+              const auto crlf_pos = details::FindCrlf(read_buffer);
               if(!crlf_pos.has_value())
                 {
                   const auto bytes_read
