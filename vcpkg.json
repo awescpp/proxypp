@@ -8,6 +8,7 @@
     "boost-date-time",
     "boost-url",
     "boost-test",
+    "boost-multiprecision",
     "cli11",
     "spdlog",
     "magic-enum"

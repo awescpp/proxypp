@@ -1,4 +1,4 @@
-find_package(Boost CONFIG REQUIRED COMPONENTS unit_test_framework)
+find_package(Boost CONFIG REQUIRED COMPONENTS unit_test_framework multiprecision)
 
 add_executable(test_demo test_demo.cpp)
 target_link_libraries(test_demo PRIVATE Boost::unit_test_framework)
@@ -9,3 +9,9 @@ add_executable(test_boost_url test_boost_url.cpp)
 target_link_libraries(test_boost_url PRIVATE Boost::unit_test_framework Boost::url)
 target_compile_definitions(test_boost_url PRIVATE BOOST_TEST_DYN_LINK)
 add_test(NAME test_boost_url COMMAND test_boost_url)
+
+
+add_executable(test_http_message_utils test_http_message_utils.cpp)
+target_compile_definitions(test_http_message_utils PRIVATE BOOST_TEST_DYN_LINK)
+target_link_libraries(test_http_message_utils PRIVATE Boost::unit_test_framework Boost::multiprecision proxypp::http)
+add_test(NAME test_http_message_utils COMMAND test_http_message_utils)
