@@ -75,7 +75,8 @@ namespace proxypp::http
         co_return ExchangeResult::Close;
       }
 
-    if(!co_await ForwardResponseBody(remote_response_parser))
+    if(!co_await ForwardResponseBody(client_request_parser,
+                                     remote_response_parser))
       {
         co_return ExchangeResult::Close;
       }
@@ -86,6 +87,55 @@ namespace proxypp::http
       }
 
     co_return ExchangeResult::Close;
+  }
+
+  BodyInfo<MessageDirection::Request>
+  HttpProxySession::DetermineBodyInfo(const RequestParser& request_parser)
+  {
+    if(request_parser.chunked())
+      {
+        return {RequestBodyFraming::Chunked, 0};
+      }
+    const auto content_length = request_parser.content_length();
+    if(content_length.has_value())
+      {
+        return {RequestBodyFraming::ContentLength, *content_length};
+      }
+    return {RequestBodyFraming::None};
+  }
+
+  BodyInfo<MessageDirection::Response>
+  HttpProxySession::DetermineBodyInfo(const RequestParser& request_parser,
+                                      const ResponseParser& response_parser)
+  {
+    const auto status_code = response_parser.get().result_int();
+    if(request_parser.get().method() == http_::verb::head)
+      {
+        return {ResponseBodyFraming::None};
+      }
+    if(status_code >= 100 && status_code < 200)
+      {
+        return {ResponseBodyFraming::None};
+      }
+    if(status_code == 204 || status_code == 304)
+      {
+        return {ResponseBodyFraming::None};
+      }
+    if(request_parser.get().method() == http_::verb::connect
+       && status_code >= 200 && status_code < 300)
+      {
+        return {ResponseBodyFraming::Tunnel};
+      }
+    if(response_parser.chunked())
+      {
+        return {ResponseBodyFraming::Chunked};
+      }
+    if(response_parser.content_length().has_value())
+      {
+        return {ResponseBodyFraming::ContentLength,
+                *response_parser.content_length()};
+      }
+    return {ResponseBodyFraming::CloseDelimited};
   }
 
   asio::awaitable<std::optional<HttpProxySession::RequestHeader>>
@@ -303,35 +353,16 @@ namespace proxypp::http
   asio::awaitable<bool>
   HttpProxySession::ForwardRequestBody(RequestParser& client_request_parser)
   {
-    const auto& client_request = client_request_parser.get();
-
-    const auto has_transfer_encoding
-      = client_request.find(http_::field::transfer_encoding)
-        != client_request.end();
-
-    if(client_request.chunked())
+    const auto request_body_info = DetermineBodyInfo(client_request_parser);
+    switch(request_body_info.framing)
       {
+      case RequestBodyFraming::ContentLength:
+        co_return co_await ForwardRequestBodyByContentLength(
+          request_body_info.content_length);
+      case RequestBodyFraming::Chunked:
         co_return co_await ForwardRequestBodyByChunked();
+      case RequestBodyFraming::None: co_return true;
       }
-
-    if(has_transfer_encoding)
-      {
-        LOG_HTTP_ERROR("unsupported transfer-encoding: {}",
-                       client_request[http_::field::transfer_encoding]);
-        co_return false;
-      }
-
-    if(client_request.has_content_length())
-      {
-        const auto content_length = client_request_parser.content_length();
-        if(!content_length.has_value())
-          {
-            co_return true;
-          }
-        co_return co_await ForwardRequestBodyByContentLength(*content_length);
-      }
-
-    co_return true;
   }
 
   asio::awaitable<bool> HttpProxySession::ForwardRequestBodyByContentLength(
@@ -404,35 +435,30 @@ namespace proxypp::http
   }
 
   asio::awaitable<bool>
-  HttpProxySession::ForwardResponseBody(ResponseParser& remote_response_parser)
+  HttpProxySession::ForwardResponseBody(RequestParser& client_request_parser,
+                                        ResponseParser& remote_response_parser)
   {
-    const auto& remote_response = remote_response_parser.get();
-    if(remote_response.chunked())
+    const auto response_body_info
+      = DetermineBodyInfo(client_request_parser, remote_response_parser);
+    switch(response_body_info.framing)
       {
+      case ResponseBodyFraming::ContentLength:
+        co_return co_await ForwardResponseBodyByContentLength(
+          response_body_info.content_length);
+
+      case ResponseBodyFraming::Chunked:
         co_return co_await ForwardResponseBodyByChunked(
           remote_response_parser);
+
+      case ResponseBodyFraming::CloseDelimited:
+        co_return co_await ForwardResponseBodyByCloseDelimited();
+
+      case ResponseBodyFraming::Tunnel:
+        LOG_HTTP_ERROR("tunnel forward is not supported currently");
+        break;
+
+      case ResponseBodyFraming::None: co_return true;
       }
-
-    const auto has_transfer_encoding
-      = remote_response.find(http_::field::transfer_encoding)
-        != remote_response.end();
-
-    if(has_transfer_encoding)
-      {
-        LOG_HTTP_ERROR("unsupported transfer-encoding: {}",
-                       remote_response[http_::field::transfer_encoding]);
-        co_return false;
-      }
-
-    const auto content_length = remote_response_parser.content_length();
-    if(!content_length.has_value())
-      {
-        LOG_HTTP_ERROR("response body length is unknown, treat as no body in "
-                       "current version");
-        co_return true;
-      }
-
-    co_return co_await ForwardResponseBodyByContentLength(*content_length);
   }
 
   asio::awaitable<bool> HttpProxySession::ForwardResponseBodyByContentLength(
@@ -447,6 +473,12 @@ namespace proxypp::http
     ResponseParser& response_parser)
   {
     co_return co_await ForwardChunked(
+      remote_read_buffer_, {"remote", remote_sock_}, {"client", client_sock_});
+  }
+
+  asio::awaitable<bool> HttpProxySession::ForwardResponseBodyByCloseDelimited()
+  {
+    co_return co_await ForwardUntilEof(
       remote_read_buffer_, {"remote", remote_sock_}, {"client", client_sock_});
   }
 
@@ -500,7 +532,7 @@ namespace proxypp::http
            && remote_sock_.socket().is_open();
   }
 
-  asio::awaitable<std::optional<std::size_t>>
+  asio::awaitable<std::optional<HttpProxySession::ReadSomeResult>>
   HttpProxySession::ReadSomeFromPeer(beast::flat_buffer& buffer,
                                      ForwardPeer from_peer)
   {
@@ -509,6 +541,12 @@ namespace proxypp::http
       mutable_buffer, asio::as_tuple(asio::use_awaitable));
     if(ec_read)
       {
+        if(ec_read == asio::error::eof)
+          {
+            buffer.commit(bytes_read);
+            co_return ReadSomeResult{.bytes_read = bytes_read, .eof = true};
+          }
+
         LOG_HTTP_ERROR("read from {} failed, {}", from_peer.name,
                        ec_read.message());
         co_return std::nullopt;
@@ -522,7 +560,7 @@ namespace proxypp::http
 
     buffer.commit(bytes_read);
 
-    co_return bytes_read;
+    co_return ReadSomeResult{.bytes_read = bytes_read, .eof = false};
   }
 
   asio::awaitable<std::optional<std::size_t>>
@@ -574,9 +612,9 @@ namespace proxypp::http
                   state = ChunkedState::ParseChunkSizeLine;
                   break;
                 }
-              const auto read_bytes
+              const auto read_result
                 = co_await ReadSomeFromPeer(read_buffer, from_peer);
-              if(!read_bytes.has_value() || *read_bytes == 0)
+              if(!read_result.has_value() || read_result->bytes_read == 0)
                 {
                   co_return false;
                 }
@@ -683,6 +721,50 @@ namespace proxypp::http
             }
           }
       }
+  }
+
+  asio::awaitable<bool>
+  HttpProxySession::ForwardUntilEof(beast::flat_buffer& read_buffer,
+                                    ForwardPeer from_peer,
+                                    ForwardPeer target_peer)
+  {
+    // drain the read_buffer first
+    if(read_buffer.size() > 0)
+      {
+        const auto bytes_written
+          = co_await WriteToPeer(read_buffer, target_peer, read_buffer.size());
+        if(!bytes_written.has_value())
+          {
+            co_return false;
+          }
+      }
+
+    for(;;)
+      {
+        const auto read_result
+          = co_await ReadSomeFromPeer(read_buffer, from_peer);
+        if(!read_result.has_value())
+          {
+            co_return false;
+          }
+
+        if(read_result->bytes_read > 0)
+          {
+            const auto bytes_written = co_await WriteToPeer(
+              read_buffer, target_peer, read_result->bytes_read);
+
+            if(!bytes_written.has_value())
+              {
+                co_return false;
+              }
+          }
+
+        if(read_result->eof)
+          {
+            break;
+          }
+      }
+    co_return true;
   }
 
   void HttpProxySession::CloseRemote()

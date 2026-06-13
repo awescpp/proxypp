@@ -10,6 +10,41 @@ using socket_t = beast::tcp_stream;
 
 namespace proxypp::http
 {
+  enum class MessageDirection
+  {
+    Request,
+    Response,
+  };
+
+  template <MessageDirection> struct BodyFraming;
+
+  template <> struct BodyFraming<MessageDirection::Request>
+  {
+    enum class Type
+    {
+      None,
+      ContentLength,
+      Chunked,
+    };
+  };
+
+  template <> struct BodyFraming<MessageDirection::Response>
+  {
+    enum class Type
+    {
+      None,
+      ContentLength,
+      Chunked,
+      CloseDelimited,
+      Tunnel,
+    };
+  };
+
+  template <MessageDirection direction> struct BodyInfo
+  {
+    BodyFraming<direction>::Type framing;
+    std::size_t content_length = 0;
+  };
 
   class HttpProxySession
       : public std::enable_shared_from_this<HttpProxySession>
@@ -30,6 +65,9 @@ namespace proxypp::http
 
     using EmptyBodyRequest = http_::request<http_::empty_body>;
     using EmptyBodyResponse = http_::response<http_::empty_body>;
+
+    using RequestBodyFraming = BodyFraming<MessageDirection::Request>::Type;
+    using ResponseBodyFraming = BodyFraming<MessageDirection::Response>::Type;
 
     struct RemoteInfo
     {
@@ -71,8 +109,21 @@ namespace proxypp::http
       Completed
     };
 
+    struct ReadSomeResult
+    {
+      std::size_t bytes_read = 0;
+      bool eof = false;
+    };
+
   private:
     asio::awaitable<ExchangeResult> HandleOneExchange();
+
+    BodyInfo<MessageDirection::Request>
+    DetermineBodyInfo(const RequestParser& request_parser);
+
+    BodyInfo<MessageDirection::Response>
+    DetermineBodyInfo(const RequestParser& request_parser,
+                      const ResponseParser& response_parser);
 
     asio::awaitable<std::optional<RequestHeader>>
     ReadClientRequestHeader(RequestParser& client_request_parser);
@@ -110,13 +161,16 @@ namespace proxypp::http
       const ResponseHeader& remote_response_header);
 
     asio::awaitable<bool>
-    ForwardResponseBody(ResponseParser& remote_response_parser);
+    ForwardResponseBody(RequestParser& client_request_parser,
+                        ResponseParser& remote_response_parser);
 
     asio::awaitable<bool>
     ForwardResponseBodyByContentLength(std::size_t content_length);
 
     asio::awaitable<bool>
     ForwardResponseBodyByChunked(ResponseParser& response_parser);
+
+    asio::awaitable<bool> ForwardResponseBodyByCloseDelimited();
 
     asio::awaitable<bool>
     ForwardExactly(beast::flat_buffer& read_buffer, ForwardPeer from_peer,
@@ -125,7 +179,7 @@ namespace proxypp::http
     bool ShouldKeepAlive(const RequestParser& client_request_parser,
                          const ResponseParser& remote_response_parser) const;
 
-    asio::awaitable<std::optional<std::size_t>>
+    asio::awaitable<std::optional<ReadSomeResult>>
     ReadSomeFromPeer(beast::flat_buffer& buffer, ForwardPeer from_peer);
 
     asio::awaitable<std::optional<std::size_t>>
@@ -135,6 +189,10 @@ namespace proxypp::http
     asio::awaitable<bool>
     ForwardChunked(beast::flat_buffer& read_buffer, ForwardPeer from_peer,
                    ForwardPeer target_peer);
+
+    asio::awaitable<bool>
+    ForwardUntilEof(beast::flat_buffer& read_buffer, ForwardPeer from_peer,
+                    ForwardPeer target_peer);
 
     void CloseRemote();
 
