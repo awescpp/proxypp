@@ -1,5 +1,5 @@
-import { createServer, type Server } from 'node:http'
-
+import { createServer as createHttpServer, type Server } from 'node:http'
+import { createServer as createHttpsServer } from 'node:https'
 import express, { type Express } from 'express'
 
 import type {
@@ -7,12 +7,17 @@ import type {
   FixtureServerBuilder,
 } from './fixture-server.types'
 import { listenOnAvailablePort } from './server-utils'
+import { fileURLToPath } from 'node:url'
+import path from 'node:path'
+import { readFileSync } from 'node:fs'
 
 export interface ExpressHttpFixtureServerBuilder extends FixtureServerBuilder<HttpFixtureServer> {
   readonly app: Express
 }
 
-export function createHttpFixtureServer(): ExpressHttpFixtureServerBuilder {
+export function createHttpFixtureServer(
+  useHttps = false,
+): ExpressHttpFixtureServerBuilder {
   const host = '127.0.0.1'
   const app = createFixtureApplication()
   const connectionListeners: Array<() => void> = []
@@ -31,7 +36,22 @@ export function createHttpFixtureServer(): ExpressHttpFixtureServerBuilder {
 
       started = true
 
-      const httpServer = createServer(app)
+      let httpServer
+
+      if (useHttps) {
+        const __filename = fileURLToPath(import.meta.url)
+        const __dirname = path.dirname(__filename)
+        const certDir = path.resolve(__dirname, './certs')
+        httpServer = createHttpsServer(
+          {
+            key: readFileSync(path.join(certDir, 'localhost.key')),
+            cert: readFileSync(path.join(certDir, 'localhost.crt')),
+          },
+          app,
+        )
+      } else {
+        httpServer = createHttpServer(app)
+      }
 
       httpServer.on('connection', () => {
         for (const listener of connectionListeners) {
