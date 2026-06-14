@@ -15,12 +15,15 @@ export interface ExpressHttpFixtureServerBuilder extends FixtureServerBuilder<Ht
 export function createHttpFixtureServer(): ExpressHttpFixtureServerBuilder {
   const host = '127.0.0.1'
   const app = createFixtureApplication()
+  const connectionListeners: Array<() => void> = []
 
   let started = false
 
   return {
     app,
-
+    onConnection(listener) {
+      connectionListeners.push(listener)
+    },
     async start(): Promise<HttpFixtureServer> {
       if (started) {
         throw new Error('HTTP fixture server has already been started')
@@ -28,12 +31,18 @@ export function createHttpFixtureServer(): ExpressHttpFixtureServerBuilder {
 
       started = true
 
-      const server = createServer(app)
+      const httpServer = createServer(app)
+
+      httpServer.on('connection', () => {
+        for (const listener of connectionListeners) {
+          listener()
+        }
+      })
 
       let port
 
       try {
-        port = await listenOnAvailablePort(server, host)
+        port = await listenOnAvailablePort(httpServer, host)
       } catch (error) {
         started = false
         throw error
@@ -45,7 +54,7 @@ export function createHttpFixtureServer(): ExpressHttpFixtureServerBuilder {
         port,
         origin: `http://${host}:${port}`,
         close() {
-          return closeServer(server)
+          return closeServer(httpServer)
         },
       }
     },

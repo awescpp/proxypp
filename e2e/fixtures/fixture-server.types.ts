@@ -11,6 +11,7 @@ export interface FixtureServer {
 
 export interface FixtureServerBuilder<TServer extends FixtureServer> {
   start(): Promise<TServer>
+  onConnection?: (listener: () => void) => void
 }
 
 // endregion
