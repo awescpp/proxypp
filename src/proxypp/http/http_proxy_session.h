@@ -77,11 +77,36 @@ namespace proxypp::http
   private:
     asio::awaitable<ExchangeResult> HandleOneExchange();
 
+    // region HTTPS tunnel proxy related
+
+    asio::awaitable<ExchangeResult>
+    HandleConnectExchange(const RequestHeader& request_header);
+
+    asio::awaitable<bool> WriteConnectEstablishedResponseToClient();
+
+    asio::awaitable<void> ClientToRemoteTunnel();
+
+    asio::awaitable<void> RemoteToClientTunnel();
+
+    asio::awaitable<void>
+    ForwardViaTunnel(beast::flat_buffer& read_buffer, ForwardPeer from_peer,
+                     ForwardPeer target_peer);
+
+    asio::awaitable<void> RelayTunnelBidirectional();
+
+    // endregion
+
     asio::awaitable<std::optional<RequestHeader>>
     ReadClientRequestHeader(RequestParser& client_request_parser);
 
     std::optional<RemoteInfo>
     ParseRemoteInfo(const RequestHeader& client_request_header);
+
+    std::optional<RemoteInfo>
+    ParseConnectRemoteInfo(const RequestHeader& client_request_header);
+
+    std::optional<RemoteInfo>
+    ParseHttpRemoteInfo(const RequestHeader& client_request_header);
 
     RequestHeader
     BuildRemoteRequestHeader(const RequestHeader& client_request_header,
@@ -162,6 +187,7 @@ namespace proxypp::http
     beast::flat_buffer remote_read_buffer_;
 
     RemoteConnectionState remote_state_;
+    bool closed_ = false;
   };
 
 } // namespace proxypp::http

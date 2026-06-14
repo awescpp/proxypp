@@ -33,6 +33,12 @@ namespace proxypp::http
         co_return ExchangeResult::Close;
       }
 
+    // handle HTTPS tunnel proxy
+    if(client_request_header->method() == http_::verb::connect)
+      {
+        co_return co_await HandleConnectExchange(*client_request_header);
+      }
+
     auto remote_info = ParseRemoteInfo(*client_request_header);
     if(!remote_info.has_value())
       {
@@ -89,6 +95,124 @@ namespace proxypp::http
     co_return ExchangeResult::Close;
   }
 
+  // region HTTPS tunnel proxy related
+
+  asio::awaitable<HttpProxySession::ExchangeResult>
+  HttpProxySession::HandleConnectExchange(const RequestHeader& request_header)
+  {
+    const auto remote_info = ParseRemoteInfo(request_header);
+    if(!remote_info.has_value())
+      {
+        co_return ExchangeResult::Close;
+      }
+    if(!co_await EnsureRemoteConnected(*remote_info))
+      {
+        co_return ExchangeResult::Close;
+      }
+    if(!co_await WriteConnectEstablishedResponseToClient())
+      {
+        co_return ExchangeResult::Close;
+      }
+    co_await RelayTunnelBidirectional();
+    co_return ExchangeResult::Close;
+  }
+
+  asio::awaitable<bool>
+  HttpProxySession::WriteConnectEstablishedResponseToClient()
+  {
+    // According to the HTTP specification, when forwarding HTTPS traffic,
+    // if the proxy successfully connects to the remote server, it should
+    // directly send an HTTP header back to the client
+    // indicating that the remote connection has been established and
+    // that encrypted data can now be sent.
+    // The proxy does not need to wait for a response from the remote server.
+    EmptyBodyResponse response;
+    response.result(http_::status::ok);
+    response.version(11);
+    response.reason("Connection Established");
+    response.set(http_::field::proxy_connection, "keep-alive");
+    http_::response_serializer<http_::empty_body> serializer{response};
+    const auto [ec_write, bytes_written] = co_await http_::async_write(
+      client_sock_, serializer, asio::as_tuple(asio::use_awaitable));
+    if(ec_write)
+      {
+        LOG_HTTP_ERROR("write CONNECT response to client failed, {}",
+                       ec_write.message());
+        co_return false;
+      }
+    co_return true;
+  }
+
+  asio::awaitable<void> HttpProxySession::ClientToRemoteTunnel()
+  {
+    co_await ForwardViaTunnel(client_read_buffer_, {"client", client_sock_},
+                              {"remote", remote_sock_});
+  }
+
+  asio::awaitable<void> HttpProxySession::RemoteToClientTunnel()
+  {
+    co_await ForwardViaTunnel(remote_read_buffer_, {"remote", remote_sock_},
+                              {"client", client_sock_});
+  }
+
+  asio::awaitable<void>
+  HttpProxySession::ForwardViaTunnel(beast::flat_buffer& read_buffer,
+                                     ForwardPeer from_peer,
+                                     ForwardPeer target_peer)
+  {
+    // LOG_HTTP_DEBUG("tunnel {} -> {} started", from_peer.name,
+    //                target_peer.name);
+    for(;;)
+      {
+        if(read_buffer.size() == 0)
+          {
+            const auto read_result
+              = co_await ReadSomeFromPeer(read_buffer, from_peer);
+            if(!read_result.has_value())
+              {
+                // LOG_HTTP_ERROR("tunnel {} -> {} read failed", from_peer.name,
+                //                target_peer.name);
+                break;
+              }
+            if(read_result->eof)
+              {
+                // LOG_HTTP_DEBUG("tunnel {} -> {} eof", from_peer.name,
+                //                target_peer.name);
+                break;
+              }
+          }
+        const auto bytes_to_write = read_buffer.size();
+        const auto bytes_written
+          = co_await WriteToPeer(read_buffer, target_peer, bytes_to_write);
+        if(!bytes_written.has_value())
+          {
+            // LOG_HTTP_ERROR("tunnel {} -> {} write failed", from_peer.name,
+            //                target_peer.name);
+            break;
+          }
+      }
+
+    // LOG_HTTP_DEBUG("tunnel {} -> {} stopped", from_peer.name,
+    //                target_peer.name);
+
+    Close();
+  }
+
+  asio::awaitable<void> HttpProxySession::RelayTunnelBidirectional()
+  {
+    auto self = shared_from_this();
+    auto ex = co_await asio::this_coro::executor;
+    asio::co_spawn(
+      ex,
+      [self]() -> asio::awaitable<void> {
+        co_await self->ClientToRemoteTunnel();
+      },
+      asio::detached);
+    co_await self->RemoteToClientTunnel();
+  }
+
+  // endregion
+
   asio::awaitable<std::optional<HttpProxySession::RequestHeader>>
   HttpProxySession::ReadClientRequestHeader(
     RequestParser& client_request_parser)
@@ -109,6 +233,54 @@ namespace proxypp::http
 
   std::optional<HttpProxySession::RemoteInfo>
   HttpProxySession::ParseRemoteInfo(const RequestHeader& client_request_header)
+  {
+    if(client_request_header.method() == http_::verb::connect)
+      {
+        return ParseConnectRemoteInfo(client_request_header);
+      }
+    return ParseHttpRemoteInfo(client_request_header);
+  }
+
+  std::optional<HttpProxySession::RemoteInfo>
+  HttpProxySession::ParseConnectRemoteInfo(
+    const RequestHeader& client_request_header)
+  {
+    const auto target = client_request_header.target();
+
+    auto authority_result = boost::urls::parse_authority(target);
+    if(!authority_result)
+      {
+        LOG_HTTP_ERROR("invalid CONNECT authority-form: {}", target);
+        return std::nullopt;
+      }
+
+    if(authority_result->host().empty())
+      {
+        LOG_HTTP_ERROR("CONNECT host is empty");
+        return std::nullopt;
+      }
+
+    if(authority_result->port().empty())
+      {
+        LOG_HTTP_ERROR("CONNECT port is empty: {}", target);
+        return std::nullopt;
+      }
+
+    RemoteInfo remote_info;
+    remote_info.scheme = "tunnel";
+    remote_info.host = authority_result->host();
+    remote_info.port = authority_result->port();
+    remote_info.forward_target.clear();
+
+    LOG_HTTP_DEBUG("parse CONNECT remote_info, host={}, port={}",
+                   remote_info.host, remote_info.port);
+
+    return remote_info;
+  }
+
+  std::optional<HttpProxySession::RemoteInfo>
+  HttpProxySession::ParseHttpRemoteInfo(
+    const RequestHeader& client_request_header)
   {
     if(auto absolute_form_result
        = boost::urls::parse_absolute_uri(client_request_header.target()))
@@ -495,7 +667,16 @@ namespace proxypp::http
         if(ec_read == asio::error::eof)
           {
             buffer.commit(bytes_read);
+            LOG_HTTP_DEBUG("read eof from {}, read {} bytes", from_peer.name,
+                           bytes_read);
             co_return ReadSomeResult{.bytes_read = bytes_read, .eof = true};
+          }
+
+        if(ec_read == asio::error::operation_aborted)
+          {
+            buffer.commit(bytes_read);
+            LOG_HTTP_DEBUG("read from {}, operation aborted", from_peer.name);
+            co_return std::nullopt;
           }
 
         LOG_HTTP_ERROR("read from {} failed, {}", from_peer.name,
@@ -726,7 +907,18 @@ namespace proxypp::http
         remote_sock_.socket().shutdown(asio::socket_base::shutdown_both, ec);
         if(ec)
           {
-            LOG_HTTP_ERROR("shutdown remote socket failed, {}", ec.message());
+            if(ec == asio::error::not_connected
+               || ec == asio::error::operation_aborted
+               || ec == asio::error::connection_reset)
+              {
+                LOG_HTTP_DEBUG("shutdown remote socket ignored, {}",
+                               ec.message());
+              }
+            else
+              {
+                LOG_HTTP_ERROR("shutdown remote socket failed, {}",
+                               ec.message());
+              }
             ec.clear();
           }
 
@@ -752,7 +944,18 @@ namespace proxypp::http
         client_sock_.socket().shutdown(asio::socket_base::shutdown_both, ec);
         if(ec)
           {
-            LOG_HTTP_ERROR("shutdown client socket failed, {}", ec.message());
+            if(ec == asio::error::not_connected
+               || ec == asio::error::operation_aborted
+               || ec == asio::error::connection_reset)
+              {
+                LOG_HTTP_DEBUG("shutdown client socket ignored, {}",
+                               ec.message());
+              }
+            else
+              {
+                LOG_HTTP_ERROR("shutdown client socket failed, {}",
+                               ec.message());
+              }
             ec.clear();
           }
 
@@ -777,6 +980,13 @@ namespace proxypp::http
   }
   void HttpProxySession::Close()
   {
+    if(closed_)
+      {
+        return;
+      }
+    closed_ = true;
+    LOG_HTTP_DEBUG("close http proxy session");
+
     CloseRemote();
     CloseClient();
   }

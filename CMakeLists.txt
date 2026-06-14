@@ -15,7 +15,7 @@ add_library(proxypp_options INTERFACE)
 add_library(proxypp::options ALIAS proxypp_options)
 target_include_directories(proxypp_options INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_precompile_headers(proxypp_options INTERFACE src/proxypp/pch.h)
-target_compile_options(proxypp_options INTERFACE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+target_compile_options(proxypp_options INTERFACE $<$<CXX_COMPILER_ID:MSVC>:/utf-8> $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
 target_compile_definitions(proxypp_options INTERFACE
         SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE
         $<$<PLATFORM_ID:Windows>:_WIN32_WINNT=0x0A00>
