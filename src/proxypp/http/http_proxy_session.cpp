@@ -89,55 +89,6 @@ namespace proxypp::http
     co_return ExchangeResult::Close;
   }
 
-  BodyInfo<MessageDirection::Request>
-  HttpProxySession::DetermineBodyInfo(const RequestParser& request_parser)
-  {
-    if(request_parser.chunked())
-      {
-        return {RequestBodyFraming::Chunked, 0};
-      }
-    const auto content_length = request_parser.content_length();
-    if(content_length.has_value())
-      {
-        return {RequestBodyFraming::ContentLength, *content_length};
-      }
-    return {RequestBodyFraming::None};
-  }
-
-  BodyInfo<MessageDirection::Response>
-  HttpProxySession::DetermineBodyInfo(const RequestParser& request_parser,
-                                      const ResponseParser& response_parser)
-  {
-    const auto status_code = response_parser.get().result_int();
-    if(request_parser.get().method() == http_::verb::head)
-      {
-        return {ResponseBodyFraming::None};
-      }
-    if(status_code >= 100 && status_code < 200)
-      {
-        return {ResponseBodyFraming::None};
-      }
-    if(status_code == 204 || status_code == 304)
-      {
-        return {ResponseBodyFraming::None};
-      }
-    if(request_parser.get().method() == http_::verb::connect
-       && status_code >= 200 && status_code < 300)
-      {
-        return {ResponseBodyFraming::Tunnel};
-      }
-    if(response_parser.chunked())
-      {
-        return {ResponseBodyFraming::Chunked};
-      }
-    if(response_parser.content_length().has_value())
-      {
-        return {ResponseBodyFraming::ContentLength,
-                *response_parser.content_length()};
-      }
-    return {ResponseBodyFraming::CloseDelimited};
-  }
-
   asio::awaitable<std::optional<HttpProxySession::RequestHeader>>
   HttpProxySession::ReadClientRequestHeader(
     RequestParser& client_request_parser)

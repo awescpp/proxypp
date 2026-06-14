@@ -10,8 +10,12 @@ target_link_libraries(test_boost_url PRIVATE Boost::unit_test_framework Boost::u
 target_compile_definitions(test_boost_url PRIVATE BOOST_TEST_DYN_LINK)
 add_test(NAME test_boost_url COMMAND test_boost_url)
 
-
 add_executable(test_http_message_utils test_http_message_utils.cpp)
 target_compile_definitions(test_http_message_utils PRIVATE BOOST_TEST_DYN_LINK)
 target_link_libraries(test_http_message_utils PRIVATE Boost::unit_test_framework Boost::multiprecision proxypp::http)
 add_test(NAME test_http_message_utils COMMAND test_http_message_utils)
+
+add_executable(test_http_body_info test_http_body_info.cpp)
+target_compile_definitions(test_http_body_info PRIVATE BOOST_TEST_DYN_LINK)
+target_link_libraries(test_http_body_info PRIVATE Boost::unit_test_framework proxypp::http)
+add_test(NAME test_http_body_info COMMAND test_http_body_info)

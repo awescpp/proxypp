@@ -31,6 +31,7 @@ target_link_libraries(proxypp_log PUBLIC proxypp::options)
 add_library(proxypp_http STATIC
         src/proxypp/http/http_proxy_session.cpp
         src/proxypp/http/http_message_utils.cpp
+        src/proxypp/http/body_info.cpp
 )
 add_library(proxypp::http ALIAS proxypp_http)
 target_link_libraries(proxypp_http PUBLIC proxypp::options proxypp::log)

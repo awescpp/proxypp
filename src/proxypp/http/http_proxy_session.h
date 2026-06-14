@@ -1,5 +1,6 @@
 #pragma once
 
+#include "body_info.h"
 #include "proxypp/common.h"
 
 #include <boost/beast.hpp>
@@ -10,42 +11,6 @@ using socket_t = beast::tcp_stream;
 
 namespace proxypp::http
 {
-  enum class MessageDirection
-  {
-    Request,
-    Response,
-  };
-
-  template <MessageDirection> struct BodyFraming;
-
-  template <> struct BodyFraming<MessageDirection::Request>
-  {
-    enum class Type
-    {
-      None,
-      ContentLength,
-      Chunked,
-    };
-  };
-
-  template <> struct BodyFraming<MessageDirection::Response>
-  {
-    enum class Type
-    {
-      None,
-      ContentLength,
-      Chunked,
-      CloseDelimited,
-      Tunnel,
-    };
-  };
-
-  template <MessageDirection direction> struct BodyInfo
-  {
-    BodyFraming<direction>::Type framing;
-    std::size_t content_length = 0;
-  };
-
   class HttpProxySession
       : public std::enable_shared_from_this<HttpProxySession>
   {
@@ -57,17 +22,11 @@ namespace proxypp::http
     asio::awaitable<void> Run();
 
   private:
-    using RequestParser = http_::request_parser<http_::buffer_body>;
-    using ResponseParser = http_::response_parser<http_::buffer_body>;
-
     using RequestHeader = http_::request_header<>;
     using ResponseHeader = http_::response_header<>;
 
     using EmptyBodyRequest = http_::request<http_::empty_body>;
     using EmptyBodyResponse = http_::response<http_::empty_body>;
-
-    using RequestBodyFraming = BodyFraming<MessageDirection::Request>::Type;
-    using ResponseBodyFraming = BodyFraming<MessageDirection::Response>::Type;
 
     struct RemoteInfo
     {
@@ -117,13 +76,6 @@ namespace proxypp::http
 
   private:
     asio::awaitable<ExchangeResult> HandleOneExchange();
-
-    BodyInfo<MessageDirection::Request>
-    DetermineBodyInfo(const RequestParser& request_parser);
-
-    BodyInfo<MessageDirection::Response>
-    DetermineBodyInfo(const RequestParser& request_parser,
-                      const ResponseParser& response_parser);
 
     asio::awaitable<std::optional<RequestHeader>>
     ReadClientRequestHeader(RequestParser& client_request_parser);
