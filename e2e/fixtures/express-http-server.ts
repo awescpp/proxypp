@@ -1,3 +1,8 @@
+/*
+ * Copyright 2026-present The proxy++ authors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { createServer as createHttpServer, type Server } from 'node:http'
 import { createServer as createHttpsServer } from 'node:https'
 import express, { type Express } from 'express'

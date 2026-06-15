@@ -1,3 +1,8 @@
+/*
+ * Copyright 2026-present The proxy++ authors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "body_info.h"
 
 #include <magic_enum/magic_enum.hpp>

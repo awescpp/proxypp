@@ -1,3 +1,8 @@
+/*
+ * Copyright 2026-present The proxy++ authors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #include "proxypp/common.h"
 #include "proxypp/core/tcp_server.h"
 #include "proxypp/log/log.h"
@@ -28,7 +33,7 @@ struct AppOpts
   SocksOpts socks;
 };
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
 #if BOOST_OS_WINDOWS
   SetConsoleOutputCP(936);
@@ -66,7 +71,9 @@ int main(int argc, char **argv)
       server->Run();
     }
 
-  if(app.got_subcommand(socks)) {}
+  if(app.got_subcommand(socks))
+    {
+    }
 
   io.run();
 

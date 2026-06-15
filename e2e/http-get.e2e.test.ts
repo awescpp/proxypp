@@ -1,3 +1,8 @@
+/*
+ * Copyright 2026-present The proxy++ authors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { HttpFixtureServer } from './fixtures/fixture-server.types'
 import { ProxyProcess, startProxyProcess } from './helpers/proxy-process'

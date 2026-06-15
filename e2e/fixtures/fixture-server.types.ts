@@ -1,3 +1,8 @@
+/*
+ * Copyright 2026-present The proxy++ authors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import type { Socket as TcpSocket } from 'node:net'
 import type { RemoteInfo, Socket as UdpSocket } from 'node:dgram'
 

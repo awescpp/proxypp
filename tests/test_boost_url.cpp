@@ -1,3 +1,8 @@
+/*
+ * Copyright 2026-present The proxy++ authors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #define BOOST_TEST_MODULE BoostUrlTest
 
 #include <boost/test/unit_test.hpp>
