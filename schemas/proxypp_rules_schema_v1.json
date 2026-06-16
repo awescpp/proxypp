@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://proxypp.net/schemas/proxypp_rules_schema_v1.json",
+  "title": "proxy++ rules schema",
+  "description": "Defines the JSON configuration format for proxy++ rule-based HTTP/HTTPS traffic processing. This schema describes the structure, fields, allowed values, and static validation rules for proxy++ rules, including processing phases, match conditions, and rule actions. Runtime execution semantics and advanced semantic validation are implemented by proxy++ itself.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "http"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional schema URI used by editors and JSON Schema validators. proxy++ ignores this field when loading rules."
+    },
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Configuration schema version"
+    },
+    "http": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rules"],
+      "properties": {
+        "rules": {
+          "type": "array",
+          "description": "HTTP/HTTPS rule list. Rules are evaluated in declaration order. Each enabled rule is evaluated independently. If a rule matches, its actions are executed in declaration order, and evaluation continues with the next rule.",
+          "items": {
+            "$ref": "#/$defs/httpRule"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "httpRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "phase", "actions"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable rule name."
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether this rule is enabled."
+        },
+        "phase": { "$ref": "#/$defs/httpPhase" },
+        "match": {
+          "$ref": "#/$defs/httpMatch",
+          "description": "Optional match condition. If omitted, the rule matches all HTTP contexts in the specified phase."
+        },
+        "actions": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Actions to execute when this rule matches. Actions are executed in declaration order.",
+          "items": { "$ref": "#/$defs/httpAction" }
+        }
+      }
+    },
+    "httpPhase": {
+      "type": "string",
+      "enum": ["request", "response"],
+      "description": "The HTTP proxy processing phase in which this rule is evaluated. The request phase is evaluated after an HTTP request has been parsed and before it is forwarded upstream. The response phase is evaluated after an HTTP response has been parsed and before it is forwarded to the client."
+    },
+    "httpMatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expr"],
+      "properties": {
+        "expr": {
+          "type": "string",
+          "minLength": 1,
+          "description": "A JavaScript expression evaluated by QuickJS. The expression must return a boolean value. The current HTTP processing context is exposed through the ctx object."
+        }
+      }
+    },
+    "httpAction": {
+      "oneOf": [
+        { "$ref": "#/$defs/headerSetAction" },
+        { "$ref": "#/$defs/headerAddAction" },
+        { "$ref": "#/$defs/headerRemoveAction" },
+        { "$ref": "#/$defs/headerReplaceAction" }
+      ],
+      "description": "Header name matching is case-insensitive. When an operation inserts a header field, the inserted field uses the exact name string specified by the rule action."
+    },
+    "headerSetAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op", "name", "value"],
+      "description": "Set a header field to the specified value. Header field name matching is case-insensitive. If one or more header fields with the same name already exist, all of them are removed and a single new header field with the specified name and value is inserted. If no header field with the same name exists, a new header field is inserted.",
+      "properties": {
+        "op": {
+          "const": "header.set"
+        },
+        "name": {
+          "$ref": "#/$defs/headerName"
+        },
+        "value": {
+          "$ref": "#/$defs/headerValue"
+        }
+      }
+    },
+    "headerAddAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op", "name", "value"],
+      "description": "Add a header field with the specified name and value. Header field name matching is not used to remove or replace existing fields. Existing header fields with the same name are preserved. This operation may result in multiple header fields with the same name.",
+      "properties": {
+        "op": {
+          "const": "header.add"
+        },
+        "name": {
+          "$ref": "#/$defs/headerName"
+        },
+        "value": {
+          "$ref": "#/$defs/headerValue"
+        }
+      }
+    },
+    "headerRemoveAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op", "name"],
+      "description": "Remove all header fields with the specified name. Header field name matching is case-insensitive. If no matching header field exists, this operation has no effect.",
+      "properties": {
+        "op": {
+          "const": "header.remove"
+        },
+        "name": {
+          "$ref": "#/$defs/headerName"
+        }
+      }
+    },
+    "headerReplaceAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op", "name", "value"],
+      "description": "Replace existing header fields with the specified value. Header field name matching is case-insensitive. If one or more header fields with the same name exist, all of them are removed and a single new header field with the specified name and value is inserted. If no matching header field exists, this operation has no effect.",
+      "properties": {
+        "op": {
+          "const": "header.replace"
+        },
+        "name": {
+          "$ref": "#/$defs/headerName"
+        },
+        "value": {
+          "$ref": "#/$defs/headerValue"
+        }
+      }
+    },
+    "headerName": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$",
+      "description": "HTTP header field name."
+    },
+    "headerValue": {
+      "type": "string",
+      "description": "HTTP header field value"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "../../schemas/proxypp_rules_schema_v1.json",
+  "version": 1,
+  "http": {
+    "rules": [
+      {
+        "name": "set user-agent for all outgoing requests",
+        "phase": "request",
+        "actions": [
+          {
+            "op": "header.set",
+            "name": "User-Agent",
+            "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          }
+        ]
+      }
+    ]
+  }
+}

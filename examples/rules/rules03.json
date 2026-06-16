@@ -1,0 +1,22 @@
+{
+  "$schema": "../../schemas/proxypp_rules_schema_v1.json",
+  "version": 1,
+  "http": {
+    "rules": [
+      {
+        "name": "add basic authorization header for 192.168.52.101:3067",
+        "phase": "request",
+        "match": {
+          "expr": "ctx.request.host==='192.168.52.101' && ctx.request.port===3067"
+        },
+        "actions": [
+          {
+            "op": "header.set",
+            "name": "Authorization",
+            "value": "Basic dXNlcjpwYXNzd29yZA=="
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "$schema": "../../schemas/proxypp_rules_schema_v1.json",
+  "version": 1,
+  "http": {
+    "rules": []
+  }
+}
