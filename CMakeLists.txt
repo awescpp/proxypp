@@ -9,8 +9,9 @@ find_package(Boost CONFIG REQUIRED COMPONENTS asio beast date_time url)
 find_package(CLI11 CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
+find_package(qjs CONFIG REQUIRED)
 
-# proxypp::core
+# proxypp::options
 add_library(proxypp_options INTERFACE)
 add_library(proxypp::options ALIAS proxypp_options)
 target_include_directories(proxypp_options INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -36,10 +37,15 @@ add_library(proxypp_http STATIC
 add_library(proxypp::http ALIAS proxypp_http)
 target_link_libraries(proxypp_http PUBLIC proxypp::options proxypp::log)
 
+# proxypp::script
+add_library(proxypp_script STATIC src/proxypp/script/js_runtime.cpp)
+add_library(proxypp::script ALIAS proxypp_script)
+target_link_libraries(proxypp_script PUBLIC proxypp::options proxypp::log qjs)
+
 # proxypp::core
 add_library(proxypp_core STATIC src/proxypp/core/tcp_server.cpp)
 add_library(proxypp::core ALIAS proxypp_core)
-target_link_libraries(proxypp_core PUBLIC proxypp::options proxypp::http proxypp::log)
+target_link_libraries(proxypp_core PUBLIC proxypp::options proxypp::http proxypp::script proxypp::log)
 
 # proxy++ executable
 add_executable(proxy++ app/main.cpp)

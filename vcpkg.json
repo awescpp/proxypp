@@ -1,7 +1,7 @@
 {
   "name": "proxy-plus-plus",
   "version-string": "0.0.1",
-  "builtin-baseline": "f6735d5aa1537081e8d425372ea7e585b0ad65e8",
+  "builtin-baseline": "5d35de2ee8b13d0bcec328153605638a74fbbf84",
   "dependencies": [
     "boost-asio",
     "boost-beast",
@@ -11,6 +11,13 @@
     "boost-multiprecision",
     "cli11",
     "spdlog",
-    "magic-enum"
+    "magic-enum",
+    "quickjs-ng"
+  ],
+  "overrides": [
+    {
+      "name": "quickjs-ng",
+      "version": "0.15.1"
+    }
   ]
 }
