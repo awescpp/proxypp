@@ -12,12 +12,7 @@
     "cli11",
     "spdlog",
     "magic-enum",
-    "quickjs-ng"
-  ],
-  "overrides": [
-    {
-      "name": "quickjs-ng",
-      "version": "0.15.1"
-    }
+    "quickjs-ng",
+    "tl-expected"
   ]
 }

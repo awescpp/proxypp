@@ -27,6 +27,7 @@ module.exports = {
       [
         'core',
         'app',
+        'common',
         'server',
         'session',
         'http',
@@ -79,6 +80,7 @@ module.exports = {
     ],
     scopes: [
       'core',
+      'common',
       'net',
       'log',
       'http',
