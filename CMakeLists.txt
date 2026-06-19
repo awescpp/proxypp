@@ -51,7 +51,13 @@ add_library(proxypp::http ALIAS proxypp_http)
 target_link_libraries(proxypp_http PUBLIC proxypp::options proxypp::log proxypp::common)
 
 # proxypp::script
-add_library(proxypp_script STATIC src/proxypp/script/js_runtime.cpp)
+add_library(proxypp_script STATIC
+        src/proxypp/script/qjs/runtime.cpp
+        src/proxypp/script/qjs/context.cpp
+        src/proxypp/script/qjs/value.cpp
+        src/proxypp/script/qjs/evaluator.cpp
+        src/proxypp/script/qjs/detail/exception_message.cpp
+)
 add_library(proxypp::script ALIAS proxypp_script)
 target_link_libraries(proxypp_script PUBLIC proxypp::options proxypp::log proxypp::common qjs)
 

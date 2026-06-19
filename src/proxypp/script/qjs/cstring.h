@@ -5,11 +5,8 @@
 
 #pragma once
 
-namespace proxypp::script
+namespace proxypp::script::qjs
 {
-  class JsRuntime
-  {
-  public:
-    JsRuntime() = default;
-  };
+  class CString
+  {};
 }

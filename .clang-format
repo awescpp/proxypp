@@ -36,7 +36,7 @@ PenaltyExcessCharacter: 100
 PenaltyReturnTypeOnItsOwnLine: 1
 PointerAlignment: Left
 SortIncludes: CaseSensitive
-IncludeBlocks: Regroup
+IncludeBlocks: Merge
 SpaceBeforeParens: Never
 SpacesInContainerLiterals: false
 Standard: Cpp11

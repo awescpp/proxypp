@@ -4,7 +4,6 @@
  */
 
 #include "proxypp/error.h"
-
 #include <utility>
 
 proxypp::Error::Error(boost::system::error_code error_code, std::string msg)

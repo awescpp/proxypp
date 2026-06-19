@@ -6,7 +6,6 @@
 #pragma once
 
 #include "proxypp/error.h"
-
 #include <tl/expected.hpp>
 
 namespace proxypp

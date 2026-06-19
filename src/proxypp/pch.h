@@ -18,6 +18,7 @@
 #include <format>
 #include <iostream>
 #include <memory>
+#include <new>
 #include <optional>
 #include <ranges>
 #include <spdlog/spdlog.h>
