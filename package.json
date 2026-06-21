@@ -5,6 +5,7 @@
     "typecheck:e2e": "tsc --project tsconfig.e2e.json",
     "build": "node scripts/build.mjs",
     "test:unit": "node scripts/unit-test.mjs",
+    "test:unit-asan": "node scripts/unit-test-asan.mjs",
     "test:e2e": "vitest run --config vitest.config.ts",
     "test:all": "pnpm test:unit && pnpm test:e2e",
     "test:e2e:watch": "vitest --config vitest.config.ts",

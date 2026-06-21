@@ -5,6 +5,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+option(PROXYPP_ENABLE_ASAN "Enable AddressSanitizer" OFF)
+option(PROXYPP_BUILD_APP "Build proxy++ executable" ON)
+
 find_package(Boost CONFIG REQUIRED COMPONENTS asio beast date_time url)
 find_package(CLI11 CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
@@ -30,6 +33,16 @@ target_link_libraries(proxypp_options INTERFACE
         magic_enum::magic_enum
         tl::expected
 )
+if (PROXYPP_ENABLE_ASAN)
+    if (MSVC)
+        target_compile_options(proxypp_options INTERFACE /fsanitize=address)
+        target_link_options(proxypp_options INTERFACE /INCREMENTAL:NO)
+    else ()
+        target_compile_options(proxypp_options INTERFACE -fsanitize=address -fno-omit-frame-pointer)
+        target_link_options(proxypp_options INTERFACE -fsanitize=address)
+    endif ()
+endif ()
+
 
 #proxypp::common
 add_library(proxypp_common STATIC src/proxypp/error.cpp)
@@ -74,8 +87,10 @@ target_link_libraries(proxypp_core PUBLIC
 )
 
 # proxy++ executable
-add_executable(proxy++ app/main.cpp)
-target_link_libraries(proxy++ PRIVATE CLI11::CLI11 proxypp::core)
+if (PROXYPP_BUILD_APP)
+    add_executable(proxy++ app/main.cpp)
+    target_link_libraries(proxy++ PRIVATE CLI11::CLI11 proxypp::core)
+endif ()
 
 include(CTest)
 if (BUILD_TESTING)
