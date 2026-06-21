@@ -6,16 +6,17 @@
 #include "proxypp/script/qjs/context.h"
 #include "proxypp/script/qjs/error.h"
 #include <quickjs.h>
+#include <utility>
 
 proxypp::Result<proxypp::script::qjs::Context>
 proxypp::script::qjs::Context::Create(Runtime& runtime)
 {
-  JSContext* context = JS_NewContext(runtime.RawPtr());
+  JSContext* context = JS_NewContext(runtime.NativeHandle());
   if(context == nullptr)
     {
-      return proxypp::Unexpected(proxypp::Error{Errc::CreateContextFailed});
+      return proxypp::Unexpected(proxypp::Error { Errc::CreateContextFailed });
     }
-  return Context{context};
+  return Context { context };
 }
 
 proxypp::script::qjs::Context::~Context()
@@ -51,7 +52,7 @@ proxypp::script::qjs::Context::operator=(Context&& other) noexcept
   return *this;
 }
 
-JSContext* proxypp::script::qjs::Context::RawPtr() noexcept
+JSContext* proxypp::script::qjs::Context::NativeHandle() noexcept
 {
   return context_;
 }

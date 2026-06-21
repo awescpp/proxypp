@@ -5,6 +5,7 @@
 
 #pragma once
 #include <boost/system/error_code.hpp>
+#include <iostream>
 
 namespace proxypp::script::qjs
 {
@@ -31,6 +32,8 @@ namespace proxypp::script::qjs
   const boost::system::error_category& GetQjsErrorCategory() noexcept;
 
   boost::system::error_code make_error_code(Errc errc) noexcept;
+
+  std::ostream& operator<<(std::ostream& os, Errc errc);
 }
 
 template <>

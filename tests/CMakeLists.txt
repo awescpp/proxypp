@@ -1,26 +1,36 @@
 find_package(Boost CONFIG REQUIRED COMPONENTS unit_test_framework multiprecision)
 
-add_executable(test_demo test_demo.cpp)
-target_link_libraries(test_demo PRIVATE Boost::unit_test_framework)
-target_compile_definitions(test_demo PRIVATE BOOST_TEST_DYN_LINK)
-add_test(NAME test_demo COMMAND test_demo)
+function(proxypp_add_boost_tests target)
+    set(options)
+    set(one_value_args)
+    set(multi_value_args SOURCES LIBRARIES DEFINITIONS LABELS)
+    cmake_parse_arguments(ARG "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
+    if (NOT ARG_SOURCES)
+        set(ARG_SOURCES "${target}.cpp")
+    endif ()
 
-add_executable(test_boost_url test_boost_url.cpp)
-target_link_libraries(test_boost_url PRIVATE Boost::unit_test_framework Boost::url)
-target_compile_definitions(test_boost_url PRIVATE BOOST_TEST_DYN_LINK)
-add_test(NAME test_boost_url COMMAND test_boost_url)
+    add_executable(${target} ${ARG_SOURCES})
+    target_compile_definitions(${target} PRIVATE BOOST_TEST_DYN_LINK ${ARG_SOURCES})
+    target_link_libraries(${target} PRIVATE Boost::unit_test_framework ${ARG_LIBRARIES})
+    add_test(NAME ${target} COMMAND ${target})
 
-add_executable(test_http_message_utils test_http_message_utils.cpp)
-target_compile_definitions(test_http_message_utils PRIVATE BOOST_TEST_DYN_LINK)
-target_link_libraries(test_http_message_utils PRIVATE Boost::unit_test_framework Boost::multiprecision proxypp::http)
-add_test(NAME test_http_message_utils COMMAND test_http_message_utils)
+    if (ARG_LABELS)
+        set_tests_properties(${target} PROPERTIES LABELS "${ARG_LABELS}")
+    endif ()
+endfunction()
 
-add_executable(test_http_body_info test_http_body_info.cpp)
-target_compile_definitions(test_http_body_info PRIVATE BOOST_TEST_DYN_LINK)
-target_link_libraries(test_http_body_info PRIVATE Boost::unit_test_framework proxypp::http)
-add_test(NAME test_http_body_info COMMAND test_http_body_info)
-
-add_executable(test_qjs_api test_qjs_api.cpp)
-target_compile_definitions(test_qjs_api PRIVATE BOOST_TEST_DYN_LINK)
-target_link_libraries(test_qjs_api PRIVATE Boost::unit_test_framework proxypp::script)
-add_test(NAME test_qjs_api COMMAND test_qjs_api)
+proxypp_add_boost_tests(test_demo)
+proxypp_add_boost_tests(test_boost_url LIBRARIES Boost::url)
+proxypp_add_boost_tests(test_http_message_utils LIBRARIES Boost::multiprecision proxypp::http)
+proxypp_add_boost_tests(test_http_body_info LIBRARIES proxypp::http)
+proxypp_add_boost_tests(test_qjs_api LIBRARIES proxypp::script)
+proxypp_add_boost_tests(test_qjs_runtime LIBRARIES proxypp::script)
+proxypp_add_boost_tests(test_qjs_context LIBRARIES proxypp::script)
+proxypp_add_boost_tests(test_qjs_value
+        SOURCES test_qjs_evaluator.cpp qjs_fixture.cpp
+        LIBRARIES proxypp::script
+)
+proxypp_add_boost_tests(test_qjs_evaluator
+        SOURCES test_qjs_value.cpp qjs_fixture.cpp
+        LIBRARIES proxypp::script
+)

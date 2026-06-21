@@ -24,7 +24,7 @@ namespace proxypp::script::qjs
     Context(const Context& other) = delete;
     Context& operator=(const Context& other) = delete;
 
-    JSContext* RawPtr() noexcept;
+    JSContext* NativeHandle() noexcept;
 
   private:
     explicit Context(JSContext* context) noexcept;

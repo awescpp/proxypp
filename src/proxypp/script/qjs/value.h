@@ -44,6 +44,7 @@ namespace proxypp::script::qjs
     bool IsUndefined() const noexcept;
     bool IsNull() const noexcept;
     bool IsNumber() const noexcept;
+    bool IsBool() const noexcept;
     bool IsString() const noexcept;
     bool IsObject() const noexcept;
     bool IsArray() const noexcept;

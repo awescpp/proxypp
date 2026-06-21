@@ -47,7 +47,7 @@ namespace proxypp::script::qjs
     }
 
     [[nodiscard]]
-    JSValue RawValue() const noexcept
+    JSValue NativeHandle() const noexcept
     {
       return value_;
     }
@@ -78,50 +78,50 @@ namespace proxypp::script::qjs
 
   Result<Value> Value::Undefined(Context& context)
   {
-    JSContext* qjs_ctx = context.RawPtr();
+    JSContext* qjs_ctx = context.NativeHandle();
     if(qjs_ctx == nullptr)
       {
-        return Unexpected(Error{Errc::InvalidArgument});
+        return Unexpected(Error { Errc::InvalidArgument });
       }
     return detail::AdoptValue(*qjs_ctx, JS_UNDEFINED);
   }
 
   Result<Value> Value::Null(Context& context)
   {
-    JSContext* qjs_ctx = context.RawPtr();
+    JSContext* qjs_ctx = context.NativeHandle();
     if(qjs_ctx == nullptr)
       {
-        return Unexpected(Error{Errc::InvalidArgument});
+        return Unexpected(Error { Errc::InvalidArgument });
       }
     return detail::AdoptValue(*qjs_ctx, JS_NULL);
   }
 
   Result<Value> Value::Bool(Context& context, bool value)
   {
-    JSContext* qjs_ctx = context.RawPtr();
+    JSContext* qjs_ctx = context.NativeHandle();
     if(qjs_ctx == nullptr)
       {
-        return Unexpected(Error{Errc::InvalidArgument});
+        return Unexpected(Error { Errc::InvalidArgument });
       }
     return detail::AdoptValue(*qjs_ctx, JS_NewBool(qjs_ctx, value));
   }
 
   Result<Value> Value::Int32(Context& context, std::int32_t value)
   {
-    JSContext* qjs_ctx = context.RawPtr();
+    JSContext* qjs_ctx = context.NativeHandle();
     if(qjs_ctx == nullptr)
       {
-        return Unexpected(Error{Errc::InvalidArgument});
+        return Unexpected(Error { Errc::InvalidArgument });
       }
     return detail::AdoptValue(*qjs_ctx, JS_NewInt32(qjs_ctx, value));
   }
 
   Result<Value> Value::String(Context& context, std::string_view value)
   {
-    JSContext* qjs_ctx = context.RawPtr();
+    JSContext* qjs_ctx = context.NativeHandle();
     if(qjs_ctx == nullptr)
       {
-        return Unexpected(Error{Errc::InvalidArgument});
+        return Unexpected(Error { Errc::InvalidArgument });
       }
 
     const char* c_str = value.empty() ? "" : value.data();
@@ -131,7 +131,7 @@ namespace proxypp::script::qjs
       {
         const std::string message = detail::GetExceptionMessage(*qjs_ctx);
         JS_FreeValue(qjs_ctx, js_val);
-        return Unexpected(Error{Errc::InternalError, message});
+        return Unexpected(Error { Errc::InternalError, message });
       }
 
     return detail::AdoptValue(*qjs_ctx, js_val);
@@ -139,10 +139,10 @@ namespace proxypp::script::qjs
 
   Result<Value> Value::Object(Context& context)
   {
-    JSContext* qjs_ctx = context.RawPtr();
+    JSContext* qjs_ctx = context.NativeHandle();
     if(qjs_ctx == nullptr)
       {
-        const Error err{Errc::InvalidArgument};
+        const Error err { Errc::InvalidArgument };
         return Unexpected(err);
       }
 
@@ -163,37 +163,42 @@ namespace proxypp::script::qjs
 
   bool Value::IsException() const noexcept
   {
-    return IsValid() && JS_IsException(impl_->RawValue());
+    return IsValid() && JS_IsException(impl_->NativeHandle());
   }
 
   bool Value::IsUndefined() const noexcept
   {
-    return IsValid() && JS_IsUndefined(impl_->RawValue());
+    return IsValid() && JS_IsUndefined(impl_->NativeHandle());
   }
 
   bool Value::IsNull() const noexcept
   {
-    return IsValid() && JS_IsNull(impl_->RawValue());
+    return IsValid() && JS_IsNull(impl_->NativeHandle());
   }
 
   bool Value::IsNumber() const noexcept
   {
-    return IsValid() && JS_IsNumber(impl_->RawValue());
+    return IsValid() && JS_IsNumber(impl_->NativeHandle());
+  }
+
+  bool Value::IsBool() const noexcept
+  {
+    return IsValid() && JS_IsBool(impl_->NativeHandle());
   }
 
   bool Value::IsString() const noexcept
   {
-    return IsValid() && JS_IsString(impl_->RawValue());
+    return IsValid() && JS_IsString(impl_->NativeHandle());
   }
 
   bool Value::IsObject() const noexcept
   {
-    return IsValid() && JS_IsObject(impl_->RawValue());
+    return IsValid() && JS_IsObject(impl_->NativeHandle());
   }
 
   bool Value::IsArray() const noexcept
   {
-    return IsValid() && JS_IsArray(impl_->RawValue());
+    return IsValid() && JS_IsArray(impl_->NativeHandle());
   }
 
   Result<bool> Value::ToBool() const
@@ -202,7 +207,7 @@ namespace proxypp::script::qjs
       {
         return Unexpected(Error(Errc::InvalidArgument));
       }
-    const int result = JS_ToBool(impl_->Context(), impl_->RawValue());
+    const int result = JS_ToBool(impl_->Context(), impl_->NativeHandle());
     if(result < 0)
       {
         const auto message = detail::GetExceptionMessage(*impl_->Context());
@@ -215,13 +220,13 @@ namespace proxypp::script::qjs
   {
     if(!IsValid())
       {
-        return Unexpected(Error{Errc::InvalidArgument});
+        return Unexpected(Error { Errc::InvalidArgument });
       }
     std::int32_t result = 0;
-    if(JS_ToInt32(impl_->Context(), &result, impl_->RawValue()) < 0)
+    if(JS_ToInt32(impl_->Context(), &result, impl_->NativeHandle()) < 0)
       {
         const auto message = detail::GetExceptionMessage(*impl_->Context());
-        return Unexpected(Error{Errc::ToIntFailed, message});
+        return Unexpected(Error { Errc::ToIntFailed, message });
       }
     return result;
   }
@@ -230,18 +235,18 @@ namespace proxypp::script::qjs
   {
     if(!IsValid())
       {
-        return Unexpected(Error{Errc::InvalidArgument});
+        return Unexpected(Error { Errc::InvalidArgument });
       }
     size_t len = 0;
     const char* text
-      = JS_ToCStringLen(impl_->Context(), &len, impl_->RawValue());
+      = JS_ToCStringLen(impl_->Context(), &len, impl_->NativeHandle());
     if(text == nullptr)
       {
         const auto message = detail::GetExceptionMessage(*impl_->Context());
-        return Unexpected(Error{Errc::ToStringFailed, message});
+        return Unexpected(Error { Errc::ToStringFailed, message });
       }
 
-    std::string result{text, len};
+    std::string result { text, len };
     JS_FreeCString(impl_->Context(), text);
     return result;
   }
@@ -250,17 +255,17 @@ namespace proxypp::script::qjs
   {
     if(!IsValid())
       {
-        return Unexpected(Error{Errc::InvalidArgument});
+        return Unexpected(Error { Errc::InvalidArgument });
       }
 
-    const std::string property_name{name};
+    const std::string property_name { name };
     JSValue property_val = JS_GetPropertyStr(
-      impl_->Context(), impl_->RawValue(), property_name.c_str());
+      impl_->Context(), impl_->NativeHandle(), property_name.c_str());
     if(JS_IsException(property_val))
       {
         const auto message = detail::GetExceptionMessage(*impl_->Context());
         JS_FreeValue(impl_->Context(), property_val);
-        return Unexpected(Error{Errc::GetPropertyFailed, message});
+        return Unexpected(Error { Errc::GetPropertyFailed, message });
       }
     return detail::AdoptValue(*impl_->Context(), property_val);
   }
@@ -269,23 +274,23 @@ namespace proxypp::script::qjs
   {
     if(!IsValid() || !value.IsValid())
       {
-        return Unexpected(Error{Errc::InvalidArgument});
+        return Unexpected(Error { Errc::InvalidArgument });
       }
 
     if(impl_->Context() != value.impl_->Context())
       {
-        return Unexpected(Error{Errc::InvalidArgument});
+        return Unexpected(Error { Errc::InvalidArgument });
       }
 
-    const std::string property_name{name};
+    const std::string property_name { name };
     JSValue released_val = value.impl_->Release();
 
-    if(JS_SetPropertyStr(impl_->Context(), impl_->RawValue(),
+    if(JS_SetPropertyStr(impl_->Context(), impl_->NativeHandle(),
                          property_name.c_str(), released_val)
        < 0)
       {
         const auto message = detail::GetExceptionMessage(*impl_->Context());
-        return Unexpected(Error{Errc::SetPropertyFailed, message});
+        return Unexpected(Error { Errc::SetPropertyFailed, message });
       }
 
     return {};
@@ -302,8 +307,8 @@ namespace proxypp::script::qjs::detail
     if(!impl)
       {
         JS_FreeValue(&context, value);
-        return Unexpected(Error{Errc::InternalError});
+        return Unexpected(Error { Errc::InternalError });
       }
-    return Value{std::move(impl)};
+    return Value { std::move(impl) };
   }
 }

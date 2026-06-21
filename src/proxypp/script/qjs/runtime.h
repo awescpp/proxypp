@@ -23,7 +23,7 @@ namespace proxypp::script::qjs
     Runtime(const Runtime& other) = delete;
     Runtime& operator=(const Runtime& other) = delete;
 
-    JSRuntime* RawPtr()  noexcept;
+    JSRuntime* NativeHandle() noexcept;
 
   private:
     explicit Runtime(JSRuntime* runtime) noexcept;

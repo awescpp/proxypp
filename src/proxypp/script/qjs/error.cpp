@@ -4,6 +4,8 @@
  */
 
 #include "proxypp/script/qjs/error.h"
+#include "iostream"
+#include <magic_enum/magic_enum.hpp>
 
 namespace proxypp::script::qjs
 {
@@ -49,6 +51,12 @@ namespace proxypp::script::qjs
 
   boost::system::error_code make_error_code(Errc errc) noexcept
   {
-    return {static_cast<int>(errc), GetQjsErrorCategory()};
+    return { static_cast<int>(errc), GetQjsErrorCategory() };
+  }
+
+  std::ostream& operator<<(std::ostream& os, Errc errc)
+  {
+    os << magic_enum::enum_name(errc);
+    return os;
   }
 }

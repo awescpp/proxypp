@@ -18,7 +18,7 @@ proxypp::script::qjs::Runtime::Create()
   return Runtime{runtime};
 }
 
-JSRuntime* proxypp::script::qjs::Runtime::RawPtr() noexcept
+JSRuntime* proxypp::script::qjs::Runtime::NativeHandle() noexcept
 {
   return runtime_;
 }

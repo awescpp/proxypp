@@ -56,6 +56,7 @@ add_library(proxypp_script STATIC
         src/proxypp/script/qjs/context.cpp
         src/proxypp/script/qjs/value.cpp
         src/proxypp/script/qjs/evaluator.cpp
+        src/proxypp/script/qjs/error.cpp
         src/proxypp/script/qjs/detail/exception_message.cpp
 )
 add_library(proxypp::script ALIAS proxypp_script)
