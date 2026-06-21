@@ -5,7 +5,7 @@
   "description": "Defines the JSON configuration format for proxy++ rule-based HTTP/HTTPS traffic processing. This schema describes the structure, fields, allowed values, and static validation rules for proxy++ rules, including processing phases, match conditions, and rule actions. Runtime execution semantics and advanced semantic validation are implemented by proxy++ itself.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "http"],
+  "required": ["version"],
   "properties": {
     "$schema": {
       "type": "string",
@@ -19,7 +19,7 @@
     "http": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["rules"],
+      "required": [],
       "properties": {
         "rules": {
           "type": "array",
