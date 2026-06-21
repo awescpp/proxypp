@@ -4,7 +4,6 @@
  */
 
 #include "http_message_utils.h"
-
 #include "proxypp/common.h"
 
 namespace
@@ -31,9 +30,14 @@ namespace
 std::optional<std::size_t>
 proxypp::http::details::FindCrlf(const beast::flat_buffer& buffer)
 {
-  const auto begin = asio::buffers_begin(buffer.data());
-  const auto end = asio::buffers_end(buffer.data());
-  constexpr std::array crlf{'\r', '\n'};
+  // [ASAN]
+  // Keep the buffer sequence alive. Do not pass buffer.data()
+  // directly to buffers_begin()/buffers_end(), otherwise the returned
+  // iterators may refer to a destroyed **temporary** buffer sequence.
+  const auto data = buffer.data();
+  const auto begin = asio::buffers_begin(data);
+  const auto end = asio::buffers_end(data);
+  constexpr std::array crlf { '\r', '\n' };
   const auto it = std::search(begin, end, crlf.begin(), crlf.end());
   if(it == end)
     {
@@ -111,7 +115,7 @@ bool proxypp::http::details::StartsWithCrlf(const beast::flat_buffer& buffer)
     {
       return false;
     }
-  std::array<char, 2> bytes{};
+  std::array<char, 2> bytes {};
   asio::buffer_copy(asio::buffer(bytes),
                     beast::buffers_prefix(2, buffer.data()));
   return bytes[0] == '\r' && bytes[1] == '\n';
