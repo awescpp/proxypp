@@ -11,9 +11,12 @@
         },
         "actions": [
           {
-            "op": "header.set",
-            "name": "Authorization",
-            "value": "Basic dXNlcjpwYXNzd29yZA=="
+            "op": "set",
+            "target": "header",
+            "data": {
+              "name": "Authorization",
+              "value": "Basic dXNlcjpwYXNzd29yZA=="
+            }
           }
         ]
       }
