@@ -44,7 +44,7 @@
         }
       }
     },
-    "actionOp": {
+    "op": {
       "type": "string",
       "enum": ["set", "add", "replace", "remove"],
       "description": "Generic action operation. The final semantics are defined by the combination of op, target and data."
@@ -102,7 +102,7 @@
         "additionalProperties": false,
         "required": ["op", "target", "data"],
         "properties": {
-          "op": { "$ref": "#/$defs/actionOp" },
+          "op": { "$ref": "#/$defs/op" },
           "target": { "$ref": "#/$defs/http/target" },
           "data": {
             "description": "Action data. The required shape is determined by the combination of op and target"
