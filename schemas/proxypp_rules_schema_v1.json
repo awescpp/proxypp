@@ -17,18 +17,7 @@
       "description": "Configuration schema version"
     },
     "http": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [],
-      "properties": {
-        "rules": {
-          "type": "array",
-          "description": "HTTP/HTTPS rule list. Rules are evaluated in declaration order. Each enabled rule is evaluated independently. If a rule matches, its actions are executed in declaration order, and evaluation continues with the next rule.",
-          "items": {
-            "$ref": "#/$defs/http/rule"
-          }
-        }
-      }
+      "$ref": "#/$defs/http/$defs/config"
     }
   },
   "$defs": {
@@ -50,122 +39,144 @@
       "description": "Generic action operation. The final semantics are defined by the combination of op, target and data."
     },
     "http": {
-      "phase": {
-        "type": "string",
-        "enum": ["request", "response"],
-        "description": "The HTTP proxy processing phase in which this rule is evaluated. The request phase is evaluated after an HTTP request has been parsed and before it is forwarded upstream. The response phase is evaluated after an HTTP response has been parsed and before it is forwarded to the client."
-      },
-      "target": {
-        "type": "string",
-        "enum": ["header"],
-        "description": "HTTP action target. More HTTP targets, such as body, method, URI, or status code, may be added in future schema versions"
-      },
-      "header": {
-        "name": {
+      "$defs": {
+        "phase": {
           "type": "string",
-          "minLength": 1,
-          "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$",
-          "description": "HTTP header field name."
+          "enum": ["request", "response"],
+          "description": "The HTTP proxy processing phase in which this rule is evaluated. The request phase is evaluated after an HTTP request has been parsed and before it is forwarded upstream. The response phase is evaluated after an HTTP response has been parsed and before it is forwarded to the client."
         },
-        "value": {
+        "target": {
           "type": "string",
-          "description": "HTTP header field value"
-        }
-      },
-      "data": {
-        "headerName": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["name"],
-          "properties": {
-            "name": {
-              "$ref": "#/$defs/http/header/name"
-            }
-          }
+          "enum": ["header"],
+          "description": "HTTP action target. More HTTP targets, such as body, method, URI, or status code, may be added in future schema versions"
         },
-        "headerNameValue": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["name", "value"],
-          "properties": {
+        "header": {
+          "$defs": {
             "name": {
-              "$ref": "#/$defs/http/header/name"
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$",
+              "description": "HTTP header field name."
             },
             "value": {
-              "$ref": "#/$defs/http/header/value"
+              "type": "string",
+              "description": "HTTP header field value"
             }
           }
-        }
-      },
-      "action": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["op", "target", "data"],
-        "properties": {
-          "op": { "$ref": "#/$defs/op" },
-          "target": { "$ref": "#/$defs/http/target" },
-          "data": {
-            "description": "Action data. The required shape is determined by the combination of op and target"
-          }
         },
-        "allOf": [
-          {
-            "if": {
-              "required": ["target", "op"],
+        "data": {
+          "$defs": {
+            "headerName": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name"],
               "properties": {
-                "target": { "const": "header" },
-                "op": { "enum": ["set", "add", "replace"] }
+                "name": {
+                  "$ref": "#/$defs/http/$defs/header/$defs/name"
+                }
               }
             },
-            "then": {
+            "headerNameValue": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "value"],
               "properties": {
-                "data": {
-                  "$ref": "#/$defs/http/data/headerNameValue"
+                "name": {
+                  "$ref": "#/$defs/http/$defs/header/$defs/name"
+                },
+                "value": {
+                  "$ref": "#/$defs/http/$defs/header/$defs/value"
                 }
               }
             }
+          }
+        },
+        "action": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["op", "target", "data"],
+          "properties": {
+            "op": { "$ref": "#/$defs/op" },
+            "target": { "$ref": "#/$defs/http/$defs/target" },
+            "data": {
+              "description": "Action data. The required shape is determined by the combination of op and target"
+            }
           },
-          {
-            "if": {
-              "required": ["target", "op"],
-              "properties": {
-                "target": { "const": "header" },
-                "op": { "const": "remove" }
+          "allOf": [
+            {
+              "if": {
+                "required": ["target", "op"],
+                "properties": {
+                  "target": { "const": "header" },
+                  "op": { "enum": ["set", "add", "replace"] }
+                }
+              },
+              "then": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/$defs/http/$defs/data/$defs/headerNameValue"
+                  }
+                }
               }
             },
-            "then": {
-              "properties": {
-                "data": { "$ref": "#/$defs/http/data/headerName" }
+            {
+              "if": {
+                "required": ["target", "op"],
+                "properties": {
+                  "target": { "const": "header" },
+                  "op": { "const": "remove" }
+                }
+              },
+              "then": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/$defs/http/$defs/data/$defs/headerName"
+                  }
+                }
               }
             }
+          ]
+        },
+        "rule": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "phase", "actions"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Human-readable rule name."
+            },
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Whether this rule is enabled"
+            },
+            "phase": { "$ref": "#/$defs/http/$defs/phase" },
+            "match": {
+              "$ref": "#/$defs/match",
+              "description": "Optional match condition. If omitted, the rule matches all HTTP contexts in the specified phase."
+            },
+            "actions": {
+              "type": "array",
+              "minItems": 1,
+              "description": "Actions to execute when this rule matches. Actions are executed in declaration order.",
+              "items": { "$ref": "#/$defs/http/$defs/action" }
+            }
           }
-        ]
-      },
-      "rule": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["name", "phase", "actions"],
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Human-readable rule name."
-          },
-          "enabled": {
-            "type": "boolean",
-            "default": true,
-            "description": "Whether this rule is enabled"
-          },
-          "phase": { "$ref": "#/$defs/http/phase" },
-          "match": {
-            "$ref": "#/$defs/match",
-            "description": "Optional match condition. If omitted, the rule matches all HTTP contexts in the specified phase."
-          },
-          "actions": {
-            "type": "array",
-            "minItems": 1,
-            "description": "Actions to execute when this rule matches. Actions are executed in declaration order.",
-            "items": { "$ref": "#/$defs/http/action" }
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "rules": {
+              "type": "array",
+              "description": "HTTP/HTTPS rule list. Rules are evaluated in declaration order. Each enabled rule is evaluated independently. If a rule matches, its actions are executed in declaration order, and evaluation continues with the next rule.",
+              "items": {
+                "$ref": "#/$defs/http/$defs/rule"
+              }
+            }
           }
         }
       }
