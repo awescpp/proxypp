@@ -14,6 +14,7 @@
     "spdlog",
     "magic-enum",
     "quickjs-ng",
-    "tl-expected"
+    "tl-expected",
+    "jsoncons"
   ]
 }

@@ -38,6 +38,13 @@ namespace proxypp::rule
         case Errc::UnsupportedAction: return "unsupported rule action";
         case Errc::ActionExecutionFailed:
           return "rule action execution failed";
+        case Errc::InvalidRuleSchemaJson: return "invalid rule schema JSON";
+        case Errc::InvalidRuleFileJson: return "invalid rule file JSON";
+        case Errc::InvalidRuleSchema: return "invalid rule schema";
+        case Errc::RuleFileSchemaValidationFailed:
+          return "rule file schema validation failed";
+        case Errc::UnsupportedJsonSchemaVersion:
+          return "unsupported rule schema version";
         }
       return "unknown rule error";
     }

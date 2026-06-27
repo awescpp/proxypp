@@ -14,6 +14,7 @@ find_package(spdlog CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
 find_package(qjs CONFIG REQUIRED)
 find_package(tl-expected CONFIG REQUIRED)
+find_package(jsoncons CONFIG REQUIRED)
 
 # proxypp::options
 add_library(proxypp_options INTERFACE)
@@ -71,9 +72,10 @@ add_library(proxypp_rule STATIC
         src/proxypp/rule/op.cpp
         src/proxypp/rule/match.cpp
         src/proxypp/rule/http/model.cpp
+        src/proxypp/rule/schema_validator.cpp
 )
 add_library(proxypp::rule ALIAS proxypp_rule)
-target_link_libraries(proxypp_rule PUBLIC proxypp_options proxypp::log proxypp::common)
+target_link_libraries(proxypp_rule PUBLIC proxypp_options proxypp::log proxypp::common PRIVATE jsoncons::jsoncons)
 
 # proxypp::script
 add_library(proxypp_script STATIC

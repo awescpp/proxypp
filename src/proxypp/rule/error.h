@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include <iosfwd>
 #include <boost/system/error_code.hpp>
+#include <iosfwd>
 
 namespace proxypp::rule
 {
@@ -31,6 +31,12 @@ namespace proxypp::rule
     InvalidAction,
     UnsupportedAction,
     ActionExecutionFailed,
+
+    InvalidRuleSchemaJson,
+    InvalidRuleFileJson,
+    InvalidRuleSchema,
+    UnsupportedJsonSchemaVersion,
+    RuleFileSchemaValidationFailed,
   };
 
   const boost::system::error_category& GetRuleErrorCategory() noexcept;
