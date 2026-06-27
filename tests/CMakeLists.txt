@@ -34,3 +34,7 @@ proxypp_add_boost_tests(test_qjs_evaluator
         SOURCES test_qjs_value.cpp qjs_fixture.cpp
         LIBRARIES proxypp::script
 )
+proxypp_add_boost_tests(test_rule_op LIBRARIES proxypp::rule)
+proxypp_add_boost_tests(test_rule_match LIBRARIES proxypp::rule)
+proxypp_add_boost_tests(test_rule_http_model LIBRARIES proxypp::rule)
+proxypp_add_boost_tests(test_rule_config LIBRARIES proxypp::rule)
