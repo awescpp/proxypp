@@ -58,6 +58,8 @@ target_link_libraries(proxypp_log PUBLIC proxypp::options proxypp::common)
 
 # proxypp::http
 add_library(proxypp_http STATIC
+        src/proxypp/http/adapter/beast_request_adapter.cpp
+        src/proxypp/http/adapter/beast_response_adapter.cpp
         src/proxypp/http/http_proxy_session.cpp
         src/proxypp/http/http_message_utils.cpp
         src/proxypp/http/body_info.cpp
@@ -71,8 +73,13 @@ add_library(proxypp_rule STATIC
         src/proxypp/rule/error.cpp
         src/proxypp/rule/op.cpp
         src/proxypp/rule/match.cpp
-        src/proxypp/rule/http/model.cpp
         src/proxypp/rule/schema_validator.cpp
+        src/proxypp/rule/rule_engine.cpp
+        src/proxypp/rule/match_context.cpp
+        src/proxypp/rule/http/model.cpp
+        src/proxypp/rule/http/action_executor.cpp
+        src/proxypp/rule/http/context_injector.cpp
+        src/proxypp/rule/http/apply.cpp
 )
 add_library(proxypp::rule ALIAS proxypp_rule)
 target_link_libraries(proxypp_rule PUBLIC proxypp_options proxypp::log proxypp::common PRIVATE jsoncons::jsoncons)
