@@ -12,7 +12,9 @@
     "format": "prettier --write \"e2e/**/*.ts\" \"*.ts\" \"*.json\" \"*.md\"",
     "format:check": "prettier --check \"e2e/**/*.ts\" \"*.ts\" \"*.json\" \"*.md\"",
     "prepare": "simple-git-hooks",
-    "lint:commit": "commitlint --edit"
+    "lint:commit": "commitlint --edit",
+    "docs:dev": "pnpm --ignore-workspace --dir docs dev",
+    "docs:build": "pnpm --ignore-workspace --dir docs build"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.0.1",
