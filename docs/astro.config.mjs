@@ -1,11 +1,21 @@
 // @ts-check
 import { defineConfig } from 'astro/config'
 import starlight from '@astrojs/starlight'
+// import starlightVersions from 'starlight-versions'
 
 // https://astro.build/config
 export default defineConfig({
   integrations: [
     starlight({
+      plugins: [
+        // edit here, and version bumped automatically
+        // starlightVersions({
+        // versions: [{ slug: '0.1.0', label: 'v0.1.0' }],
+        // current: {
+        //   label: 'v0.1.0',
+        // },
+        // }),
+      ],
       title: 'proxy++',
       defaultLocale: 'root',
       locales: {
