@@ -7,10 +7,8 @@
 
 #include "proxypp/result.h"
 #include <memory>
-#include <new>
 #include <string>
 #include <string_view>
-#include <utility>
 
 namespace proxypp::script::qjs
 {
@@ -32,6 +30,7 @@ namespace proxypp::script::qjs
     Value(const Value& other) = delete;
     Value& operator=(const Value& other) = delete;
 
+    static Result<Value> GlobalObject(Context& context);
     static Result<Value> Undefined(Context& context);
     static Result<Value> Null(Context& context);
     static Result<Value> Bool(Context& context, bool value);

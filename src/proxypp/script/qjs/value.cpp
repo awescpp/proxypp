@@ -76,6 +76,24 @@ namespace proxypp::script::qjs
 
   Value& Value::operator=(Value&& other) noexcept = default;
 
+  Result<Value> Value::GlobalObject(Context& context)
+  {
+    JSContext* qjs_ctx = context.NativeHandle();
+    if(qjs_ctx == nullptr)
+      {
+        return Unexpected(Error { Errc::InvalidArgument });
+      }
+    JSValue js_val = JS_GetGlobalObject(qjs_ctx);
+    if(JS_IsException(js_val))
+      {
+        const auto message = detail::GetExceptionMessage(*qjs_ctx);
+        JS_FreeValue(qjs_ctx, js_val);
+        return Unexpected(Error { Errc::InvalidArgument, message });
+      }
+
+    return detail::AdoptValue(*qjs_ctx, js_val);
+  }
+
   Result<Value> Value::Undefined(Context& context)
   {
     JSContext* qjs_ctx = context.NativeHandle();

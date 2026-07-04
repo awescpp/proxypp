@@ -1,24 +1,15 @@
 BasedOnStyle: GNU
-Language: Cpp
-Standard: c++20
-LineEnding: LF
-
-IndentWidth: 2
-TabWidth: 2
-UseTab: Never
-ContinuationIndentWidth: 2
-ConstructorInitializerIndentWidth: 4
-NamespaceIndentation: All
-MaxEmptyLinesToKeep: 1
-KeepEmptyLinesAtTheStartOfBlocks: false
-
-ColumnLimit: 80
-
-PointerAlignment: Left
-ReferenceAlignment: Pointer
-DerivePointerAlignment: false
-QualifierAlignment: Leave
-
+AlignAfterOpenBracket: Align
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: All
+# Uncommenting these lines will sometimes result in lines following an
+# if(){} or for(){} block being attached to the end of the block.
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakAfterReturnType: None
 BreakBeforeBraces: Custom
 BraceWrapping:
   AfterClass: true
@@ -35,38 +26,19 @@ BraceWrapping:
   SplitEmptyFunction: false
   SplitEmptyRecord: false
   SplitEmptyNamespace: false
-
-AllowShortBlocksOnASingleLine: Never
-AllowShortCaseLabelsOnASingleLine: true
-AllowShortFunctionsOnASingleLine: Empty
-AllowShortIfStatementsOnASingleLine: Never
-AllowShortLoopsOnASingleLine: false
-AllowShortLambdasOnASingleLine: Empty
-
-AlignAfterOpenBracket: true
-AllowAllArgumentsOnNextLine: false
-AllowAllParametersOfDeclarationOnNextLine: false
-BinPackArguments: false
-BinPackParameters: false
-
-BreakConstructorInitializers: BeforeColon
-PackConstructorInitializers: Never
-SpaceBeforeCtorInitializerColon: true
-
-BreakInheritanceList: BeforeColon
-SpaceBeforeInheritanceColon: true
-
-Cpp11BracedListStyle: true
+ContinuationIndentWidth: 2
+Cpp11BracedListStyle: false
 SpaceBeforeCpp11BracedList: true
-
-SpaceBeforeParens: Never
-SpaceBeforeRangeBasedForLoopColon: true
-SpacesInContainerLiterals: false
-
-AlwaysBreakAfterDefinitionReturnType: None
-AlwaysBreakAfterReturnType: None
-PenaltyReturnTypeOnItsOwnLine: 1
+KeepEmptyLinesAtTheStartOfBlocks: false
+Language: Cpp
+MaxEmptyLinesToKeep: 1
+NamespaceIndentation: All
 PenaltyExcessCharacter: 100
-
+PenaltyReturnTypeOnItsOwnLine: 1
+PointerAlignment: Left
 SortIncludes: CaseSensitive
 IncludeBlocks: Merge
+SpaceBeforeParens: Never
+SpacesInContainerLiterals: false
+Standard: c++20
+LineEnding: LF

@@ -160,6 +160,42 @@ namespace proxypp::script::qjs::test
   BOOST_FIXTURE_TEST_SUITE(value_creation_tests, QjsContextFixture)
 
   BOOST_AUTO_TEST_CASE(
+    context_global_object_should_be_valid_and_identified_as_object)
+  {
+    auto value = qjs::Value::GlobalObject(context);
+    BOOST_REQUIRE(value.has_value());
+    BOOST_REQUIRE(value->IsValid());
+    BOOST_TEST(!value->IsUndefined());
+    BOOST_TEST(!value->IsNull());
+    BOOST_TEST(!value->IsBool());
+    BOOST_TEST(!value->IsNumber());
+    BOOST_TEST(!value->IsString());
+    BOOST_TEST(value->IsObject());
+  }
+
+  BOOST_AUTO_TEST_CASE(
+    global_object_set_property_should_be_visible_to_evaluator)
+  {
+    auto global = qjs::Value::GlobalObject(context);
+    BOOST_REQUIRE(global.has_value());
+
+    auto value = qjs::Value::String(context, "proxy++");
+    BOOST_REQUIRE(value.has_value());
+
+    const auto set_result
+      = global->SetProperty("__proxypp_test_name", std::move(*value));
+    BOOST_REQUIRE(set_result.has_value());
+
+    auto result = qjs::Evaluator::Eval(context, "__proxypp_test_name");
+    BOOST_REQUIRE(result.has_value());
+    BOOST_REQUIRE(result->IsValid());
+
+    auto text = result->ToString();
+    BOOST_REQUIRE(text.has_value());
+    BOOST_TEST(*text == "proxy++");
+  }
+
+  BOOST_AUTO_TEST_CASE(
     undefined_value_should_be_valid_and_identified_as_undefined)
   {
     auto value = qjs::Value::Undefined(context);
