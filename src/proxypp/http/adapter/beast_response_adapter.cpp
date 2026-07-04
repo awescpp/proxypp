@@ -11,19 +11,33 @@ proxypp::http::adapter::BeastResponseAdapter::BeastResponseAdapter(
 
 void proxypp::http::adapter::BeastResponseAdapter::SetHeader(
   std::string_view name, std::string_view value)
-{}
+{
+  response_.set(name, value);
+}
 
 void proxypp::http::adapter::BeastResponseAdapter::AddHeader(
   std::string_view name, std::string_view value)
-{}
+{
+  if(!response_.contains(name))
+    {
+      response_.set(name, value);
+    }
+}
 
 void proxypp::http::adapter::BeastResponseAdapter::ReplaceHeader(
   std::string_view name, std::string_view value)
-{}
+{
+  if(response_.contains(name))
+    {
+      response_.set(name, value);
+    }
+}
 
 void proxypp::http::adapter::BeastResponseAdapter::RemoveHeader(
   std::string_view name)
-{}
+{
+  response_.erase(name);
+}
 
 unsigned proxypp::http::adapter::BeastResponseAdapter::Status() const
 {

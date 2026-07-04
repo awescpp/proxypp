@@ -52,7 +52,7 @@ proxypp::rule::http::ApplyResponse(RuleEngine& engine,
     [&request_adapter, &response_adapter](MatchContext& context) {
       return InjectResponseContext(context, request_adapter, response_adapter);
     },
-    [](const Rule& rule) -> const std::optional<Match> { return rule.match; },
+    [](const Rule& rule) -> const std::optional<Match>& { return rule.match; },
     [](const Rule& rule) -> const std::vector<Action>& {
       return rule.actions;
     },

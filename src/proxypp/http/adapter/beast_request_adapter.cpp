@@ -38,16 +38,30 @@ proxypp::http::adapter::BeastRequestAdapter::Header(std::string_view name)
 
 void proxypp::http::adapter::BeastRequestAdapter::SetHeader(
   std::string_view name, std::string_view value)
-{}
+{
+  request_.set(name, value);
+}
 
 void proxypp::http::adapter::BeastRequestAdapter::AddHeader(
   std::string_view name, std::string_view value)
-{}
+{
+  if(!request_.contains(name))
+    {
+      request_.set(name, value);
+    }
+}
 
 void proxypp::http::adapter::BeastRequestAdapter::ReplaceHeader(
   std::string_view name, std::string_view value)
-{}
+{
+  if(request_.contains(name))
+    {
+      request_.set(name, value);
+    }
+}
 
 void proxypp::http::adapter::BeastRequestAdapter::RemoveHeader(
   std::string_view name)
-{}
+{
+  request_.erase(name);
+}

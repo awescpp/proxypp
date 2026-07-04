@@ -19,10 +19,16 @@ function(proxypp_add_boost_tests target)
     endif ()
 endfunction()
 
+# http
 proxypp_add_boost_tests(test_demo)
 proxypp_add_boost_tests(test_boost_url LIBRARIES Boost::url)
 proxypp_add_boost_tests(test_http_message_utils LIBRARIES Boost::multiprecision proxypp::http)
 proxypp_add_boost_tests(test_http_body_info LIBRARIES proxypp::http)
+proxypp_add_boost_tests(test_http_beast_request_adapter LIBRARIES proxypp::http)
+proxypp_add_boost_tests(test_http_beast_response_adapter LIBRARIES proxypp::http)
+
+
+# qjs
 proxypp_add_boost_tests(test_qjs_api LIBRARIES proxypp::script)
 proxypp_add_boost_tests(test_qjs_runtime LIBRARIES proxypp::script)
 proxypp_add_boost_tests(test_qjs_context LIBRARIES proxypp::script)
@@ -34,10 +40,15 @@ proxypp_add_boost_tests(test_qjs_evaluator
         SOURCES test_qjs_value.cpp qjs_fixture.cpp
         LIBRARIES proxypp::script
 )
+
+# rule
 proxypp_add_boost_tests(test_rule_op LIBRARIES proxypp::rule)
 proxypp_add_boost_tests(test_rule_match LIBRARIES proxypp::rule)
 proxypp_add_boost_tests(test_rule_http_model LIBRARIES proxypp::rule)
 proxypp_add_boost_tests(test_rule_config LIBRARIES proxypp::rule)
+proxypp_add_boost_tests(test_rule_engine LIBRARIES proxypp::rule proxypp::script)
 proxypp_add_boost_tests(test_rule_schema_validator LIBRARIES proxypp::rule)
 proxypp_add_boost_tests(test_rule_schema_validation LIBRARIES proxypp::rule)
 target_compile_definitions(test_rule_schema_validation PRIVATE PROXYPP_RULE_SCHEMA_V1_PATH="${CMAKE_SOURCE_DIR}/schemas/proxypp_rules_schema_v1.json")
+proxypp_add_boost_tests(test_rule_http_action_executor LIBRARIES proxypp::rule proxypp::http)
+proxypp_add_boost_tests(test_rule_http_apply LIBRARIES proxypp::rule proxypp::http proxypp::script)

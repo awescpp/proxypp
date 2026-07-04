@@ -4,6 +4,7 @@
  */
 
 #include "proxypp/rule/http/context_injector.h"
+
 proxypp::Result<void> proxypp::rule::http::InjectRequestContext(
   MatchContext& context, const RequestAdapter& request_adapter)
 {
