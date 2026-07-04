@@ -88,7 +88,7 @@ namespace proxypp::script::qjs
       {
         const auto message = detail::GetExceptionMessage(*qjs_ctx);
         JS_FreeValue(qjs_ctx, js_val);
-        return Unexpected(Error { Errc::InvalidArgument, message });
+        return Unexpected(Error { Errc::InternalError, message });
       }
 
     return detail::AdoptValue(*qjs_ctx, js_val);
