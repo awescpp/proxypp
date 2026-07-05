@@ -7,6 +7,8 @@
 
 #include "proxypp/class_utils.h"
 #include "proxypp/result.h"
+#include "proxypp/script/qjs/context.h"
+#include "proxypp/script/qjs/value.h"
 #include <memory>
 
 namespace proxypp::rule
@@ -21,6 +23,8 @@ namespace proxypp::rule
   class MatchContext
   {
   public:
+    static Result<MatchContext> Create(script::qjs::Context context);
+
     ~MatchContext();
 
     PROXYPP_DISABLE_COPY(MatchContext);
@@ -29,22 +33,14 @@ namespace proxypp::rule
 
     MatchContext& operator=(MatchContext&& other) noexcept;
 
-    Result<void> SetString(std::string_view object, std::string_view name,
-                           std::string_view value);
+    script::qjs::Context& ScriptContext() noexcept;
+
+    Result<void> AddObject(std::string_view name, script::qjs::Value object);
 
     Result<void>
-    SetNumber(std::string_view object, std::string_view name, int number);
-
-    Result<void>
-    SetBool(std::string_view object, std::string_view name, bool value);
-
-    Result<void>
-    SetNestedString(std::string_view object, std::string_view nested_object,
-                    std::string_view name, std::string_view value);
+    AddGlobalValue(std::string_view name, script::qjs::Value value);
 
   private:
-    // allow `RuleEngine` to access the private constructor of `MatchContext`
-    friend class RuleEngine;
 
     class Impl;
 

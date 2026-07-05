@@ -4,14 +4,29 @@
  */
 
 #include "proxypp/rule/match_context.h"
-#include "proxypp/rule/detail/match_context_impl.h"
+#include "proxypp/rule/error.h"
 #include "proxypp/script/qjs/value.h"
 
 namespace proxypp::rule
 {
+  class MatchContext::Impl
+  {
+  public:
+    explicit Impl(script::qjs::Context context) : context_(std::move(context))
+    {}
+
+    script::qjs::Context context_;
+  };
+
   MatchContext::MatchContext(std::unique_ptr<Impl> impl)
       : impl_(std::move(impl))
   {}
+
+  Result<MatchContext> MatchContext::Create(script::qjs::Context context)
+  {
+    auto impl = std::make_unique<Impl>(std::move(context));
+    return MatchContext { std::move(impl) };
+  }
 
   MatchContext::~MatchContext() = default;
 
@@ -20,30 +35,39 @@ namespace proxypp::rule
   MatchContext&
   MatchContext::operator=(MatchContext&& other) noexcept = default;
 
-  Result<void>
-  MatchContext::SetString(std::string_view object, std::string_view name,
-                          std::string_view value)
+  script::qjs::Context& MatchContext::ScriptContext() noexcept
   {
-    return {};
-  }
-
-  Result<void> MatchContext::SetNumber(std::string_view object,
-                                       std::string_view name, int number)
-  {
-    return {};
-  }
-
-  Result<void> MatchContext::SetBool(std::string_view object,
-                                     std::string_view name, bool value)
-  {
-    return {};
+    return impl_->context_;
   }
 
   Result<void>
-  MatchContext::SetNestedString(std::string_view object,
-                                std::string_view nested_object,
-                                std::string_view name, std::string_view value)
+  MatchContext::AddObject(std::string_view name, script::qjs::Value object)
   {
+    if(!object.IsValid() || !object.IsObject())
+      {
+        return Unexpected(
+          Error(Errc::ContextInjectionFailed, "value is not an object"));
+      }
+    return AddGlobalValue(name, std::move(object));
+  }
+
+  Result<void>
+  MatchContext::AddGlobalValue(std::string_view name, script::qjs::Value value)
+  {
+    auto global = script::qjs::Value::GlobalObject(impl_->context_);
+    if(!global.has_value())
+      {
+        return Unexpected(
+          Error(Errc::ContextInjectionFailed, global.error().message));
+      }
+
+    if(auto result = global->SetProperty(name, std::move(value));
+       !result.has_value())
+      {
+        return Unexpected(
+          Error(Errc::ContextInjectionFailed, result.error().message));
+      }
+
     return {};
   }
 

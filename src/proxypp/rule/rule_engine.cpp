@@ -4,8 +4,7 @@
  */
 
 #include "proxypp/rule/rule_engine.h"
-#include "error.h"
-#include "proxypp/rule/detail/match_context_impl.h"
+#include "proxypp/rule/error.h"
 #include "proxypp/script/qjs.h"
 
 namespace proxypp::rule
@@ -53,15 +52,14 @@ namespace proxypp::rule
                                     context.error().message);
         return Unexpected(error);
       }
-    return MatchContext { std::make_unique<MatchContext::Impl>(
-      std::move(*context)) };
+    return MatchContext::Create(std::move(*context));
   }
 
   Result<bool>
   RuleEngine::EvaluateMatch(MatchContext& context, std::string_view expr)
   {
     const auto result
-      = script::qjs::Evaluator::Eval(context.impl_->context_, expr);
+      = script::qjs::Evaluator::Eval(context.ScriptContext(), expr);
 
     if(!result)
       {
