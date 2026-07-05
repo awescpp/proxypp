@@ -44,6 +44,7 @@ proxypp_add_boost_tests(test_qjs_evaluator
 # rule
 proxypp_add_boost_tests(test_rule_op LIBRARIES proxypp::rule)
 proxypp_add_boost_tests(test_rule_match LIBRARIES proxypp::rule)
+proxypp_add_boost_tests(test_rule_match_context LIBRARIES proxypp::rule proxypp::script)
 proxypp_add_boost_tests(test_rule_http_model LIBRARIES proxypp::rule)
 proxypp_add_boost_tests(test_rule_config LIBRARIES proxypp::rule)
 proxypp_add_boost_tests(test_rule_engine LIBRARIES proxypp::rule proxypp::script)
