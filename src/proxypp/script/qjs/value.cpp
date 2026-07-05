@@ -174,6 +174,23 @@ namespace proxypp::script::qjs
     return detail::AdoptValue(*qjs_ctx, js_val);
   }
 
+  Result<Value> Value::Array(Context& context)
+  {
+    JSContext* qjs_ctx = context.NativeHandle();
+    if(qjs_ctx == nullptr)
+      {
+        return Unexpected(Error(Errc::InvalidArgument));
+      }
+    JSValue array_val = JS_NewArray(qjs_ctx);
+    if(JS_IsException(array_val))
+      {
+        const auto message = detail::GetExceptionMessage(*qjs_ctx);
+        JS_FreeValue(qjs_ctx, array_val);
+        return Unexpected(Error(Errc::InternalError, message));
+      }
+    return detail::AdoptValue(*qjs_ctx, array_val);
+  }
+
   bool Value::IsValid() const noexcept
   {
     return impl_ != nullptr && impl_->IsValid();
@@ -290,7 +307,7 @@ namespace proxypp::script::qjs
 
   Result<void> Value::SetProperty(std::string_view name, Value value)
   {
-    if(!IsValid() || !value.IsValid())
+    if(!IsValid() || !IsObject() || !value.IsValid())
       {
         return Unexpected(Error { Errc::InvalidArgument });
       }
@@ -312,6 +329,88 @@ namespace proxypp::script::qjs
       }
 
     return {};
+  }
+
+  Result<void> Value::SetElement(std::uint32_t index, Value value)
+  {
+    if(!IsValid() || !IsArray() || !value.IsValid())
+      {
+        return Unexpected(Error { Errc::InvalidArgument });
+      }
+
+    if(impl_->Context() != value.impl_->Context())
+      {
+        return Unexpected(Error { Errc::InvalidArgument });
+      }
+
+    JSValue released_val = value.impl_->Release();
+
+    if(JS_SetPropertyUint32(impl_->Context(), impl_->NativeHandle(), index,
+                            released_val)
+       < 0)
+      {
+        const auto message = detail::GetExceptionMessage(*impl_->Context());
+        return Unexpected(Error { Errc::SetElementFailed, message });
+      }
+    return {};
+  }
+
+  Result<Value> Value::GetElement(std::uint32_t index) const
+  {
+    if(!IsValid() || !IsArray())
+      {
+        return Unexpected(Error { Errc::InvalidArgument });
+      }
+
+    JSValue js_value
+      = JS_GetPropertyUint32(impl_->Context(), impl_->NativeHandle(), index);
+    if(JS_IsException(js_value))
+      {
+        const auto message = detail::GetExceptionMessage(*impl_->Context());
+        JS_FreeValue(impl_->Context(), js_value);
+        return Unexpected(Error { Errc::GetPropertyFailed, message });
+      }
+    return detail::AdoptValue(*impl_->Context(), js_value);
+  }
+
+  Result<std::uint32_t> Value::ArrayLength() const
+  {
+    if(!IsValid() || !IsArray())
+      {
+        return Unexpected(Error { Errc::InvalidArgument });
+      }
+
+    JSValue js_value
+      = JS_GetPropertyStr(impl_->Context(), impl_->NativeHandle(), "length");
+
+    if(JS_IsException(js_value))
+      {
+        const auto message = detail::GetExceptionMessage(*impl_->Context());
+        JS_FreeValue(impl_->Context(), js_value);
+        return Unexpected(Error { Errc::GetPropertyFailed, message });
+      }
+
+    auto adopted_value = detail::AdoptValue(*impl_->Context(), js_value);
+
+    if(!adopted_value.has_value())
+      {
+        return Unexpected(Error(Errc::InvalidArgument, "adopt value failed"));
+      }
+
+    if(!adopted_value->IsNumber())
+      {
+        return Unexpected(
+          Error(Errc::InvalidArgument, "value is not a number"));
+      }
+
+    const auto length = adopted_value->ToInt32();
+    if(!length.has_value())
+      {
+        return Unexpected(
+          Error(Errc::InvalidArgument, length.error().message));
+      }
+
+    return *length;
   }
 
 }

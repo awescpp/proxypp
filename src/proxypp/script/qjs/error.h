@@ -25,6 +25,9 @@ namespace proxypp::script::qjs
     GetPropertyFailed,
     SetPropertyFailed,
 
+    SetElementFailed,
+    GetElementFailed,
+
     InvalidArgument,
     InternalError
   };

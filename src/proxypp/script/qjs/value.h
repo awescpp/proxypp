@@ -37,15 +37,25 @@ namespace proxypp::script::qjs
     static Result<Value> Int32(Context& context, std::int32_t value);
     static Result<Value> String(Context& context, std::string_view value);
     static Result<Value> Object(Context& context);
+    static Result<Value> Array(Context& context);
 
+    [[nodiscard]]
     bool IsValid() const noexcept;
+    [[nodiscard]]
     bool IsException() const noexcept;
+    [[nodiscard]]
     bool IsUndefined() const noexcept;
+    [[nodiscard]]
     bool IsNull() const noexcept;
+    [[nodiscard]]
     bool IsNumber() const noexcept;
+    [[nodiscard]]
     bool IsBool() const noexcept;
+    [[nodiscard]]
     bool IsString() const noexcept;
+    [[nodiscard]]
     bool IsObject() const noexcept;
+    [[nodiscard]]
     bool IsArray() const noexcept;
 
     Result<bool> ToBool() const;
@@ -54,6 +64,10 @@ namespace proxypp::script::qjs
 
     Result<Value> GetProperty(std::string_view name) const;
     Result<void> SetProperty(std::string_view name, Value value);
+
+    Result<void> SetElement(std::uint32_t index, Value value);
+    Result<Value> GetElement(std::uint32_t index) const;
+    Result<std::uint32_t> ArrayLength() const;
 
   private:
     friend class detail::ValueAccess;

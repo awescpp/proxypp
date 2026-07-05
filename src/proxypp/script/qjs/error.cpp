@@ -38,6 +38,8 @@ namespace proxypp::script::qjs
           return "failed to set JavaScript property";
         case Errc::InvalidArgument: return "invalid argument";
         case Errc::InternalError: return "internal QuickJS wrapper error";
+        case Errc::SetElementFailed: return "set element to array failed";
+        case Errc::GetElementFailed: return "get element from array failed";
         }
       return "unknown QuickJS error";
     }
