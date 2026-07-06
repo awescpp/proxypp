@@ -11,3 +11,4 @@
 #include "proxypp/script/qjs/evaluator.h"
 #include "proxypp/script/qjs/runtime.h"
 #include "proxypp/script/qjs/value.h"
+#include "proxypp/script/qjs/object_builder.h"

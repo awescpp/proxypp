@@ -40,6 +40,10 @@ proxypp_add_boost_tests(test_qjs_evaluator
         SOURCES test_qjs_value.cpp qjs_fixture.cpp
         LIBRARIES proxypp::script
 )
+proxypp_add_boost_tests(test_qjs_object_builder
+        SOURCES test_qjs_object_builder.cpp qjs_fixture.cpp
+        LIBRARIES proxypp::script
+)
 
 # rule
 proxypp_add_boost_tests(test_rule_op LIBRARIES proxypp::rule)
