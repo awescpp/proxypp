@@ -100,6 +100,7 @@ proxypp::script::qjs::ObjectBuilder::SetObject(std::string_view name,
   if(!object.IsValid() || !object.IsObject())
     {
       error_ = Error(Errc::InvalidArgument, "value is not an object");
+      return *this;
     }
 
   SetProperty(name, std::move(object));
@@ -119,6 +120,7 @@ proxypp::script::qjs::ObjectBuilder::SetValue(std::string_view name,
   if(!value.IsValid())
     {
       error_ = Error(Errc::InvalidArgument, "value is invalid");
+      return *this;
     }
 
   SetProperty(name, std::move(value));

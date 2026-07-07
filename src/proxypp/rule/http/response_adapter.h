@@ -5,8 +5,10 @@
 
 #pragma once
 
+#include "adapter_share.h"
 #include <optional>
 #include <string_view>
+#include <vector>
 
 namespace proxypp::rule::http
 {
@@ -17,11 +19,13 @@ namespace proxypp::rule::http
 
     virtual unsigned Status() const = 0;
 
-    virtual std::string_view Reason() = 0;
+    virtual std::string Reason() const = 0;
 
     virtual unsigned Version() const = 0;
 
-    virtual std::optional<std::string_view> Header(std::string_view name) = 0;
+    virtual std::optional<std::string> GetHeader(std::string_view name) = 0;
+
+    virtual std::vector<rule::http::Header> GetAllHeaders() const = 0;
 
     virtual void SetHeader(std::string_view name, std::string_view value) = 0;
 

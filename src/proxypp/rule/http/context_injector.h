@@ -6,7 +6,6 @@
 #pragma once
 
 #include "proxypp/result.h"
-#include "request_adapter.h"
 
 namespace proxypp::rule
 {

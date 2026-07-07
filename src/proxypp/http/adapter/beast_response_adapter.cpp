@@ -44,7 +44,7 @@ unsigned proxypp::http::adapter::BeastResponseAdapter::Status() const
   return response_.result_int();
 }
 
-std::string_view proxypp::http::adapter::BeastResponseAdapter::Reason()
+std::string proxypp::http::adapter::BeastResponseAdapter::Reason() const
 {
   return response_.reason();
 }
@@ -54,8 +54,8 @@ unsigned proxypp::http::adapter::BeastResponseAdapter::Version() const
   return response_.version();
 }
 
-std::optional<std::string_view>
-proxypp::http::adapter::BeastResponseAdapter::Header(std::string_view name)
+std::optional<std::string>
+proxypp::http::adapter::BeastResponseAdapter::GetHeader(std::string_view name)
 {
   const auto it = response_.find(name);
   if(it == response_.end())
@@ -63,4 +63,19 @@ proxypp::http::adapter::BeastResponseAdapter::Header(std::string_view name)
       return std::nullopt;
     }
   return it->value();
+}
+
+std::vector<proxypp::rule::http::Header>
+proxypp::http::adapter::BeastResponseAdapter::GetAllHeaders() const
+{
+  std::vector<rule::http::Header> headers;
+  headers.reserve(std::distance(response_.begin(), response_.end()));
+
+  for(auto it = response_.begin(); it != response_.end(); ++it)
+    {
+      headers.emplace_back(std::string { it->name_string() },
+                           std::string { it->value() });
+    }
+
+  return headers;
 }

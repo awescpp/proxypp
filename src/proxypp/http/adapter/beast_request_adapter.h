@@ -20,13 +20,13 @@ namespace proxypp::http::adapter
 
     PROXYPP_DISABLE_COPY_AND_MOVE(BeastRequestAdapter);
 
-    std::string_view Method() const override;
+    std::string Method() const override;
 
-    std::string_view Target() const override;
+    std::string Target() const override;
 
     unsigned Version() const override;
 
-    std::optional<std::string_view> Header(std::string_view name) override;
+    std::optional<std::string_view> GetHeader(std::string_view name) override;
 
     void SetHeader(std::string_view name, std::string_view value) override;
 
@@ -35,6 +35,8 @@ namespace proxypp::http::adapter
     void ReplaceHeader(std::string_view name, std::string_view value) override;
 
     void RemoveHeader(std::string_view name) override;
+
+    std::vector<rule::http::Header> GetAllHeaders() const override;
 
   private:
     http_::request_header<>& request_;

@@ -30,11 +30,13 @@ namespace proxypp::http::adapter
 
     unsigned Status() const override;
 
-    std::string_view Reason() override;
+    std::string Reason() const override;
 
     unsigned Version() const override;
 
-    std::optional<std::string_view> Header(std::string_view name) override;
+    std::optional<std::string> GetHeader(std::string_view name) override;
+
+    std::vector<rule::http::Header> GetAllHeaders() const override;
 
   private:
     http_::response_header<>& response_;

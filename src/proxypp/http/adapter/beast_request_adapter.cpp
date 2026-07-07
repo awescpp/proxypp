@@ -10,12 +10,12 @@ proxypp::http::adapter::BeastRequestAdapter::BeastRequestAdapter(
     : request_(request)
 {}
 
-std::string_view proxypp::http::adapter::BeastRequestAdapter::Method() const
+std::string proxypp::http::adapter::BeastRequestAdapter::Method() const
 {
   return request_.method_string();
 }
 
-std::string_view proxypp::http::adapter::BeastRequestAdapter::Target() const
+std::string proxypp::http::adapter::BeastRequestAdapter::Target() const
 {
   return request_.target();
 }
@@ -26,7 +26,7 @@ unsigned proxypp::http::adapter::BeastRequestAdapter::Version() const
 }
 
 std::optional<std::string_view>
-proxypp::http::adapter::BeastRequestAdapter::Header(std::string_view name)
+proxypp::http::adapter::BeastRequestAdapter::GetHeader(std::string_view name)
 {
   const auto it = request_.find(name);
   if(it == request_.end())
@@ -64,4 +64,19 @@ void proxypp::http::adapter::BeastRequestAdapter::RemoveHeader(
   std::string_view name)
 {
   request_.erase(name);
+}
+
+std::vector<proxypp::rule::http::Header>
+proxypp::http::adapter::BeastRequestAdapter::GetAllHeaders() const
+{
+  std::vector<rule::http::Header> headers;
+
+  headers.reserve(std::distance(request_.begin(), request_.end()));
+
+  for(auto it = request_.begin(); it != request_.end(); ++it)
+    {
+      headers.emplace_back(std::string { it->name_string() },
+                           std::string { it->value() });
+    }
+  return headers;
 }
