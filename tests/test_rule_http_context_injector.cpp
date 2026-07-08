@@ -78,7 +78,7 @@ namespace proxypp::rule::http::test
     BOOST_REQUIRE(result.has_value());
 
     const auto phase = Eval("ctx.phase");
-    BOOST_TEST(qjs::test::RequireString(phase) == "request");
+    BOOST_TEST(qjs::test::GetString(phase) == "request");
   }
 
   BOOST_AUTO_TEST_CASE(inject_request_context_should_inject_request_fields)
@@ -87,13 +87,13 @@ namespace proxypp::rule::http::test
     BOOST_REQUIRE(result.has_value());
 
     const auto request_method = Eval("ctx.request.method");
-    BOOST_TEST(qjs::test::RequireString(request_method) == "GET");
+    BOOST_TEST(qjs::test::GetString(request_method) == "GET");
 
     const auto request_target = Eval("ctx.request.target");
-    BOOST_TEST(qjs::test::RequireString(request_target) == "/api/users");
+    BOOST_TEST(qjs::test::GetString(request_target) == "/api/users");
 
     const auto request_version = Eval("ctx.request.version");
-    BOOST_TEST(qjs::test::RequireInt32(request_version) == 11);
+    BOOST_TEST(qjs::test::GetInt32(request_version) == 11);
   }
 
   BOOST_AUTO_TEST_CASE(
@@ -103,10 +103,10 @@ namespace proxypp::rule::http::test
     BOOST_REQUIRE(result.has_value());
 
     const auto user_agent = Eval("ctx.request.headers['user-agent']");
-    BOOST_TEST(qjs::test::RequireString(user_agent) == "proxypp-test");
+    BOOST_TEST(qjs::test::GetString(user_agent) == "proxypp-test");
 
     const auto x_test = Eval("ctx.request.headers['x-test']");
-    BOOST_TEST(qjs::test::RequireString(x_test) == "hello");
+    BOOST_TEST(qjs::test::GetString(x_test) == "hello");
   }
 
   BOOST_AUTO_TEST_CASE(
@@ -121,7 +121,7 @@ namespace proxypp::rule::http::test
     BOOST_REQUIRE(result.has_value());
 
     const auto x_test = Eval("ctx.request.headers['x-test']");
-    BOOST_TEST(qjs::test::RequireString(x_test) == "world");
+    BOOST_TEST(qjs::test::GetString(x_test) == "world");
   }
 
   BOOST_AUTO_TEST_CASE(inject_request_context_should_not_inject_response_object)
@@ -130,7 +130,7 @@ namespace proxypp::rule::http::test
     BOOST_REQUIRE(result.has_value());
 
     const auto response_type = Eval("typeof ctx.response");
-    BOOST_TEST(qjs::test::RequireString(response_type) == "undefined");
+    BOOST_TEST(qjs::test::GetString(response_type) == "undefined");
   }
 
   // ----------------------------------------------------
@@ -142,7 +142,7 @@ namespace proxypp::rule::http::test
     BOOST_REQUIRE(result.has_value());
 
     const auto phase = Eval("ctx.phase");
-    BOOST_TEST(qjs::test::RequireString(phase) == "response");
+    BOOST_TEST(qjs::test::GetString(phase) == "response");
   }
 
   BOOST_AUTO_TEST_CASE(
@@ -153,25 +153,25 @@ namespace proxypp::rule::http::test
     BOOST_REQUIRE(result.has_value());
 
     const auto request_method = Eval("ctx.request.method");
-    BOOST_TEST(qjs::test::RequireString(request_method) == "GET");
+    BOOST_TEST(qjs::test::GetString(request_method) == "GET");
 
     const auto request_target = Eval("ctx.request.target");
-    BOOST_TEST(qjs::test::RequireString(request_target) == "/api/users");
+    BOOST_TEST(qjs::test::GetString(request_target) == "/api/users");
 
     const auto request_version = Eval("ctx.request.version");
-    BOOST_TEST(qjs::test::RequireInt32(request_version) == 11);
+    BOOST_TEST(qjs::test::GetInt32(request_version) == 11);
 
     const auto host = Eval("ctx.request.headers['host']");
-    BOOST_TEST(qjs::test::RequireString(host) == "example.com");
+    BOOST_TEST(qjs::test::GetString(host) == "example.com");
 
     const auto response_status = Eval("ctx.response.status");
-    BOOST_TEST(qjs::test::RequireInt32(response_status) == 200);
+    BOOST_TEST(qjs::test::GetInt32(response_status) == 200);
 
     const auto response_reason = Eval("ctx.response.reason");
-    BOOST_TEST(qjs::test::RequireString(response_reason) == "OK");
+    BOOST_TEST(qjs::test::GetString(response_reason) == "OK");
 
     const auto response_version = Eval("ctx.response.version");
-    BOOST_TEST(qjs::test::RequireInt32(response_version) == 11);
+    BOOST_TEST(qjs::test::GetInt32(response_version) == 11);
   }
 
   BOOST_AUTO_TEST_CASE(
@@ -182,11 +182,11 @@ namespace proxypp::rule::http::test
     BOOST_REQUIRE(result.has_value());
 
     const auto server = Eval("ctx.response.headers['server']");
-    BOOST_TEST(qjs::test::RequireString(server) == "proxypp-test-server");
+    BOOST_TEST(qjs::test::GetString(server) == "proxypp-test-server");
 
     const auto x_response_test
       = Eval("ctx.response.headers['x-response-test']");
-    BOOST_TEST(qjs::test::RequireString(x_response_test) == "world");
+    BOOST_TEST(qjs::test::GetString(x_response_test) == "world");
   }
 
   BOOST_AUTO_TEST_SUITE_END()

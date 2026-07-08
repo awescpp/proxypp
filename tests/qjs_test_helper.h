@@ -24,7 +24,19 @@ namespace proxypp::script::qjs::test
     return std::move(*result);
   }
 
-  inline std::string RequireString(const Result<qjs::Value>& result)
+  inline void RequireString(const Result<qjs::Value>& result)
+  {
+    BOOST_REQUIRE(result.has_value());
+    BOOST_REQUIRE(result->IsValid());
+    BOOST_REQUIRE(result->IsString());
+    BOOST_REQUIRE(!result->IsBool());
+    BOOST_REQUIRE(!result->IsNull());
+    BOOST_REQUIRE(!result->IsNumber());
+    BOOST_REQUIRE(!result->IsObject());
+    BOOST_REQUIRE(!result->IsArray());
+  }
+
+  inline std::string GetString(const Result<qjs::Value>& result)
   {
     BOOST_REQUIRE(result.has_value());
     BOOST_REQUIRE(result->IsValid());
@@ -34,7 +46,7 @@ namespace proxypp::script::qjs::test
     return std::move(*text);
   }
 
-  inline int RequireInt32(const Result<qjs::Value>& result)
+  inline int GetInt32(const Result<qjs::Value>& result)
   {
     BOOST_REQUIRE(result.has_value());
     BOOST_REQUIRE(result->IsValid());
@@ -43,4 +55,22 @@ namespace proxypp::script::qjs::test
     BOOST_REQUIRE(number.has_value());
     return *number;
   }
+
+  inline bool GetBool(const Result<qjs::Value>& result)
+  {
+    BOOST_REQUIRE(result.has_value());
+    BOOST_REQUIRE(result->IsValid());
+    BOOST_REQUIRE(result->IsBool());
+    auto bool_value = result->ToBool();
+    BOOST_REQUIRE(bool_value.has_value());
+    return *bool_value;
+  }
+
+  inline bool IsNull(const Result<qjs::Value>& result)
+  {
+    BOOST_REQUIRE(result.has_value());
+    BOOST_REQUIRE(result->IsValid());
+    return result->IsNull();
+  }
+
 }
