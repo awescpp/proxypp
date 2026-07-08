@@ -75,7 +75,8 @@ namespace proxypp::rule::http
           return Unexpected(response_obj_builder.error());
         }
 
-      response_obj_builder->SetInt32("status", adapter.Status())
+      response_obj_builder
+        ->SetInt32("status", static_cast<int32_t>(adapter.Status()))
         .SetString("reason", adapter.Reason())
         .SetInt32("version", static_cast<int>(adapter.Version()))
         .SetObject("headers", std::move(*header_object));
