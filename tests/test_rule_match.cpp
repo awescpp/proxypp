@@ -5,7 +5,6 @@
 
 #define BOOST_TEST_MODULE test_rule_match_struct
 
-#include <boost/json.hpp>
 #include <boost/test/unit_test.hpp>
 #include <proxypp/rule/match.h>
 
@@ -16,8 +15,8 @@ namespace proxypp::rule::test
     const auto content = R"JSON({
       "expr": "ctx.request.host === 'example.com'"
     })JSON";
-    const auto value = boost::json::parse(content);
-    const auto match = boost::json::value_to<Match>(value);
+    const auto value = proxypp::json::parse(content);
+    const auto match = value.as<Match>();
     BOOST_TEST(match.expr == "ctx.request.host === 'example.com'");
   }
 

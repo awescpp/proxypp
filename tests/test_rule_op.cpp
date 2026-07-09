@@ -6,7 +6,6 @@
 #define BOOST_TEST_MODULE test_rule_op
 
 #include "proxypp/rule/op.h"
-#include <boost/json.hpp>
 #include <boost/test/unit_test.hpp>
 #include <vector>
 
@@ -25,8 +24,7 @@ namespace proxypp::rule ::test
       {
         BOOST_TEST_CONTEXT("value is " << value)
         {
-          BOOST_TEST(boost::json::value_to<Op>(boost::json::value(value))
-                     == expected);
+          BOOST_TEST(proxypp::json(value).as<Op>() == expected);
         }
       }
   }
@@ -38,9 +36,7 @@ namespace proxypp::rule ::test
       {
         BOOST_TEST_CONTEXT("value is " << value)
         {
-          BOOST_CHECK_THROW(
-            boost::json::value_to<Op>(boost::json::value(value)),
-            std::exception);
+          BOOST_CHECK_THROW(proxypp::json(value).as<Op>(), std::exception);
         }
       }
   }

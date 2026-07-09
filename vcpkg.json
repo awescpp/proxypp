@@ -6,7 +6,6 @@
     "boost-asio",
     "boost-beast",
     "boost-date-time",
-    "boost-json",
     "boost-url",
     "boost-test",
     "boost-multiprecision",

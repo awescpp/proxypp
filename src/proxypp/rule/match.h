@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <boost/json.hpp>
+#include "proxypp/json.h"
 
 namespace proxypp::rule
 {
@@ -13,7 +13,6 @@ namespace proxypp::rule
   {
     std::string expr;
   };
-
-  Match tag_invoke(boost::json::value_to_tag<Match>,
-                   const boost::json::value& value);
 }
+
+JSONCONS_ALL_MEMBER_TRAITS(proxypp::rule::Match, expr)

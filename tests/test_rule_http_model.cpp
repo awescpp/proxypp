@@ -21,8 +21,8 @@ namespace proxypp::rule::http
       const auto content = R"JSON({
         "name": "X-PROXYPP-VER"
       })JSON";
-      const auto value = boost::json::parse(content);
-      const auto name_only_data = boost::json::value_to<HeaderNameData>(value);
+      const auto value = proxypp::json::parse(content);
+      const auto name_only_data = value.as<HeaderNameData>();
       BOOST_TEST(name_only_data.name == "X-PROXYPP-VER");
     }
 
@@ -32,9 +32,8 @@ namespace proxypp::rule::http
         "name": "X-PROXYPP-VER",
         "value": "0.1.0"
       })JSON";
-      const auto value = boost::json::parse(content);
-      const auto name_value_data
-        = boost::json::value_to<HeaderNameValueData>(value);
+      const auto value = proxypp::json::parse(content);
+      const auto name_value_data = value.as<HeaderNameValueData>();
       BOOST_TEST(name_value_data.name == "X-PROXYPP-VER");
       BOOST_TEST(name_value_data.value == "0.1.0");
     }
@@ -79,8 +78,8 @@ namespace proxypp::rule::http
             }})JSON",
                                              op);
 
-            const auto value = boost::json::parse(content);
-            const auto action = boost::json::value_to<Action>(value);
+            const auto value = proxypp::json::parse(content);
+            const auto action = value.as<Action>();
             BOOST_TEST(action.op == expected);
             BOOST_TEST(action.target == Target::Header);
             BOOST_REQUIRE(
@@ -102,8 +101,8 @@ namespace proxypp::rule::http
           "name": "Authorization"
         }
       })JSON";
-      const auto value = boost::json::parse(content);
-      const auto action = boost::json::value_to<Action>(value);
+      const auto value = proxypp::json::parse(content);
+      const auto action = value.as<Action>();
       BOOST_TEST(action.op == rule::Op::Remove);
       BOOST_TEST(action.target == Target::Header);
       BOOST_REQUIRE(std::holds_alternative<data::HeaderNameData>(action.data));
@@ -137,8 +136,8 @@ namespace proxypp::rule::http
           }
         ]
       })JSON";
-      const auto value = boost::json::parse(content);
-      const auto rule = boost::json::value_to<Rule>(value);
+      const auto value = proxypp::json::parse(content);
+      const auto rule = value.as<Rule>();
       BOOST_TEST(rule.name
                  == "add basic authorization header for 192.168.52.101:3067");
       BOOST_TEST(rule.enabled == true);
@@ -171,8 +170,8 @@ namespace proxypp::rule::http
           }
         ]
       })JSON";
-      const auto value = boost::json::parse(content);
-      const auto rule = boost::json::value_to<Rule>(value);
+      const auto value = proxypp::json::parse(content);
+      const auto rule = value.as<Rule>();
       BOOST_TEST(rule.enabled == false);
     }
 
@@ -201,8 +200,8 @@ namespace proxypp::rule::http
           }
         ]
       })JSON";
-      const auto value = boost::json::parse(content);
-      const auto config = boost::json::value_to<Config>(value);
+      const auto value = proxypp::json::parse(content);
+      const auto config = value.as<Config>();
       BOOST_REQUIRE(config.rules.has_value());
       BOOST_TEST(config.rules->size() == 1);
     }

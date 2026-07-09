@@ -17,8 +17,7 @@ namespace proxypp::rule
     int version = kRulesSchemaVersion;
     std::optional<http::Config> http;
   };
-
-  Config tag_invoke(boost::json::value_to_tag<Config>,
-                    const boost::json::value& value);
-
 }
+
+JSONCONS_N_MEMBER_NAME_TRAITS(proxypp::rule::Config, 1, (version, "version"),
+                              (schema, "$schema"), (http, "http"))

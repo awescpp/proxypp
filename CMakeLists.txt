@@ -8,7 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(PROXYPP_ENABLE_ASAN "Enable AddressSanitizer" OFF)
 option(PROXYPP_BUILD_APP "Build proxy++ executable" ON)
 
-find_package(Boost CONFIG REQUIRED COMPONENTS asio beast date_time url json)
+find_package(Boost CONFIG REQUIRED COMPONENTS asio beast date_time url)
 find_package(CLI11 CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
@@ -29,7 +29,6 @@ target_compile_definitions(proxypp_options INTERFACE
 target_link_libraries(proxypp_options INTERFACE
         Boost::asio
         Boost::beast
-        Boost::json
         Boost::url
         spdlog::spdlog
         magic_enum::magic_enum

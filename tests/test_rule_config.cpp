@@ -21,8 +21,8 @@ namespace proxypp::rule::test
     const auto content = R"JSON({
       "version": 1
     })JSON";
-    const auto value = boost::json::parse(content);
-    const auto config = boost::json::value_to<rule::Config>(value);
+    const auto value = proxypp::json::parse(content);
+    const auto config = value.as<rule::Config>();
     BOOST_TEST(config.version == 1);
     BOOST_TEST(config.schema.has_value() == false);
     BOOST_TEST(config.http.has_value() == false);
@@ -55,8 +55,8 @@ namespace proxypp::rule::test
           ]
         }
       })JSON";
-    const auto value = boost::json::parse(content);
-    const auto config = boost::json::value_to<rule::Config>(value);
+    const auto value = proxypp::json::parse(content);
+    const auto config = value.as<rule::Config>();
     BOOST_TEST(config.version == 1);
     BOOST_REQUIRE(config.schema.has_value());
     BOOST_TEST(*config.schema == "../../schemas/proxypp_rules_schema_v1.json");

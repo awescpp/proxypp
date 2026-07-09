@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <boost/json.hpp>
+#include "proxypp/json.h"
 #include <iosfwd>
 
 namespace proxypp::rule
@@ -19,9 +19,9 @@ namespace proxypp::rule
     Replace,
   };
 
-  Op tag_invoke(boost::json::value_to_tag<Op>,
-                const boost::json::value& value);
-
   std::ostream& operator<<(std::ostream& os, Op value);
 
 }
+
+JSONCONS_ENUM_NAME_TRAITS(proxypp::rule::Op, (Set, "set"), (Add, "add"),
+                          (Remove, "remove"), (Replace, "replace"))
