@@ -5,9 +5,16 @@
 
 #pragma once
 
+#include "result.h"
 #include <jsoncons/json.hpp>
+#include <string_view>
 
 namespace proxypp
 {
   using json = jsoncons::ojson;
+
+  namespace jsonlib = jsoncons;
+
+  Result<json> ParseJson(std::string_view content);
+
 }

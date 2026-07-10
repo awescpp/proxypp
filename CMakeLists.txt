@@ -46,9 +46,9 @@ endif ()
 
 
 #proxypp::common
-add_library(proxypp_common STATIC src/proxypp/error.cpp)
+add_library(proxypp_common STATIC src/proxypp/error.cpp src/proxypp/json.cpp)
 add_library(proxypp::common ALIAS proxypp_common)
-target_link_libraries(proxypp_common PUBLIC proxypp::options)
+target_link_libraries(proxypp_common PUBLIC proxypp::options jsoncons::jsoncons)
 
 # proxypp::log
 add_library(proxypp_log STATIC src/proxypp/log/log.cpp)
@@ -81,7 +81,7 @@ add_library(proxypp_rule STATIC
         src/proxypp/rule/http/apply.cpp
 )
 add_library(proxypp::rule ALIAS proxypp_rule)
-target_link_libraries(proxypp_rule PUBLIC proxypp_options proxypp::log proxypp::common PRIVATE jsoncons::jsoncons)
+target_link_libraries(proxypp_rule PUBLIC proxypp_options proxypp::log proxypp::common)
 
 # proxypp::script
 add_library(proxypp_script STATIC
@@ -104,7 +104,7 @@ target_link_libraries(proxypp_core PUBLIC
         proxypp::common
         proxypp::http
         proxypp::script
-        proxypp_rule
+        proxypp::rule
         proxypp::log
 )
 

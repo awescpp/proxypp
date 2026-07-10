@@ -19,6 +19,8 @@ function(proxypp_add_boost_tests target)
     endif ()
 endfunction()
 
+proxypp_add_boost_tests(test_json LIBRARIES proxypp::common)
+
 # http
 proxypp_add_boost_tests(test_demo)
 proxypp_add_boost_tests(test_boost_url LIBRARIES Boost::url)

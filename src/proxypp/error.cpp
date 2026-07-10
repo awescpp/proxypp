@@ -6,6 +6,36 @@
 #include "proxypp/error.h"
 #include <utility>
 
+namespace proxypp
+{
+  class ErrorCategory final : public boost::system::error_category
+  {
+  public:
+    const char* name() const noexcept override { return "proxypp::common"; }
+    std::string message(int ev) const override
+    {
+      switch(static_cast<Errc>(ev))
+        {
+        case Errc::Ok: return "success";
+        case Errc::JsonParseFailed: return "parse json failed";
+        }
+      return "unkown error";
+    }
+  };
+
+}
+
+const boost::system::error_category& proxypp::GetErrorCategory() noexcept
+{
+  static const ErrorCategory category;
+  return category;
+}
+
+boost::system::error_code proxypp::make_error_code(Errc errc) noexcept
+{
+  return { static_cast<int>(errc), GetErrorCategory() };
+}
+
 proxypp::Error::Error(boost::system::error_code error_code, std::string msg)
     : code(error_code), message(std::move(msg))
 {

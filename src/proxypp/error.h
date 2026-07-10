@@ -10,6 +10,19 @@
 
 namespace proxypp
 {
+
+  enum class Errc
+  {
+    Ok = 0,
+    JsonParseFailed,
+  };
+
+  const boost::system::error_category& GetErrorCategory() noexcept;
+
+  boost::system::error_code make_error_code(Errc errc) noexcept;
+
+  std::ostream& operator<<(std::ostream& os, Errc errc);
+
   struct Error
   {
     boost::system::error_code code;
@@ -22,3 +35,7 @@ namespace proxypp
     explicit operator bool() const noexcept;
   };
 }
+
+template <>
+struct boost::system::is_error_code_enum<proxypp::Errc> : std::true_type
+{};
