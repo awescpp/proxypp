@@ -3,16 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "proxypp/json.h"
-#include "proxypp/error.h"
+#include "proxypp/helper/json_helper.h"
 
-namespace proxypp
+namespace proxypp::helper::json
 {
-  Result<json> ParseJson(std::string_view content)
+  Result<proxypp::json> ParseJson(std::string_view content)
   {
     try
       {
-        return json::parse(content);
+        return proxypp::json::parse(content);
       }
     catch(const std::exception& e)
       {

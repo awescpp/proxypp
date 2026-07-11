@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "schema_validator.h"
-#include "error.h"
-#include <jsoncons/json.hpp>
+#include "json_schema_helper.h"
+#include "proxypp/error.h"
 #include <jsoncons_ext/jsonschema/jsonschema.hpp>
+#include <proxypp/json.h>
 
-namespace proxypp::rule
+namespace proxypp::helper::schema
 {
 
   namespace
@@ -28,7 +28,7 @@ namespace proxypp::rule
     {
       if(!schema.is_object())
         {
-          Error error { Errc::InvalidRuleSchema,
+          Error error { Errc::InvalidJsonSchema,
                         "rule schema root must be a JSON object" };
           return Unexpected(error);
         }
@@ -75,7 +75,7 @@ namespace proxypp::rule
       }
     catch(const jsoncons::ser_error& e)
       {
-        Error error { Errc::InvalidRuleSchemaJson,
+        Error error { Errc::InvalidJsonSchema,
                       std::format("invalid rule schema JSON: {}", e.what()) };
         return Unexpected(error);
       }
@@ -93,7 +93,7 @@ namespace proxypp::rule
       }
     catch(const jsoncons::ser_error& e)
       {
-        Error error { Errc::InvalidRuleFileJson,
+        Error error { Errc::JsonParseFailed,
                       std::format("invalid rule file JSON: {}", e.what()) };
         return Unexpected(error);
       }
@@ -108,14 +108,14 @@ namespace proxypp::rule
       }
     catch(const jsonschema::validation_error& e)
       {
-        Error error { Errc::RuleFileSchemaValidationFailed,
+        Error error { Errc::JsonSchemaValidationError,
                       std::format("rule file schema validation failed: {}",
                                   e.what()) };
         return Unexpected(error);
       }
     catch(const std::exception& e)
       {
-        Error error { Errc::InvalidRuleSchema,
+        Error error { Errc::InvalidJsonSchema,
                       std::format("invalid rule schema: {}", e.what()) };
         return Unexpected(error);
       }

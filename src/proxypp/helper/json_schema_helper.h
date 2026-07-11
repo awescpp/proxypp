@@ -7,7 +7,7 @@
 
 #include "proxypp/result.h"
 
-namespace proxypp::rule
+namespace proxypp::helper::schema
 {
   Result<void> ValidateJsonBySchema(std::string_view schema_text,
                                     std::string_view document_text);

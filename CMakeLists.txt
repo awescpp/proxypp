@@ -8,7 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(PROXYPP_ENABLE_ASAN "Enable AddressSanitizer" OFF)
 option(PROXYPP_BUILD_APP "Build proxy++ executable" ON)
 
-find_package(Boost CONFIG REQUIRED COMPONENTS asio beast date_time url)
+find_package(Boost CONFIG REQUIRED COMPONENTS asio beast date_time url dll)
 find_package(CLI11 CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
@@ -30,6 +30,7 @@ target_link_libraries(proxypp_options INTERFACE
         Boost::asio
         Boost::beast
         Boost::url
+        Boost::dll
         spdlog::spdlog
         magic_enum::magic_enum
         tl::expected
@@ -46,7 +47,11 @@ endif ()
 
 
 #proxypp::common
-add_library(proxypp_common STATIC src/proxypp/error.cpp src/proxypp/json.cpp)
+add_library(proxypp_common STATIC src/proxypp/error.cpp
+        src/proxypp/helper/json_helper.cpp
+        src/proxypp/helper/file_helper.cpp
+        src/proxypp/helper/json_schema_helper.cpp
+)
 add_library(proxypp::common ALIAS proxypp_common)
 target_link_libraries(proxypp_common PUBLIC proxypp::options jsoncons::jsoncons)
 
@@ -72,13 +77,14 @@ add_library(proxypp_rule STATIC
         src/proxypp/rule/error.cpp
         src/proxypp/rule/op.cpp
         src/proxypp/rule/match.cpp
-        src/proxypp/rule/schema_validator.cpp
+        src/proxypp/helper/json_schema_helper.cpp
         src/proxypp/rule/rule_engine.cpp
         src/proxypp/rule/match_context.cpp
         src/proxypp/rule/http/model.cpp
         src/proxypp/rule/http/action_executor.cpp
         src/proxypp/rule/http/context_injector.cpp
         src/proxypp/rule/http/apply.cpp
+        src/proxypp/rule/rule_file.cpp
 )
 add_library(proxypp::rule ALIAS proxypp_rule)
 target_link_libraries(proxypp_rule PUBLIC proxypp_options proxypp::log proxypp::common)

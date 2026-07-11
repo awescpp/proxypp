@@ -3,14 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#define BOOST_TEST_MODULE json_parse_tests
+#define BOOST_TEST_MODULE json_helper_tests
 
 #include "proxypp/error.h"
-#include "proxypp/json.h"
+#include "proxypp/helper/json_helper.h"
 #include <boost/test/unit_test.hpp>
-#include <execution>
 
-namespace proxypp::test
+namespace proxypp::helper::json::test
 {
   BOOST_AUTO_TEST_CASE(parse_json_should_return_value_when_content_is_valid)
   {

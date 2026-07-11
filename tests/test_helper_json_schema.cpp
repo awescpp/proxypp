@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#define BOOST_TEST_MODULE test_rule_schema_validator
+#define BOOST_TEST_MODULE schema_helper_tests
 
-#include "proxypp/rule/error.h"
+#include "proxypp/error.h"
+#include "proxypp/helper/json_schema_helper.h"
 #include <boost/test/unit_test.hpp>
-#include <proxypp/rule/schema_validator.h>
 
-namespace proxypp::rule
+namespace proxypp::helper::schema
 {
   namespace test
   {
@@ -54,7 +54,7 @@ namespace proxypp::rule
       })JSON";
       const auto result = ValidateJsonBySchema(schema_text, document_text);
       BOOST_REQUIRE(result.has_value() == false);
-      BOOST_TEST(result.error().code == Errc::InvalidRuleSchemaJson);
+      BOOST_TEST(result.error().code == Errc::InvalidJsonSchema);
     }
 
     BOOST_AUTO_TEST_CASE(validate_should_fail_with_invalid_document_json)
@@ -75,7 +75,7 @@ namespace proxypp::rule
       })JSON";
       const auto result = ValidateJsonBySchema(schema_text, document_text);
       BOOST_REQUIRE(result.has_value() == false);
-      BOOST_TEST(result.error().code == Errc::InvalidRuleFileJson);
+      BOOST_TEST(result.error().code == Errc::JsonParseFailed);
     }
 
     BOOST_AUTO_TEST_CASE(
@@ -96,7 +96,7 @@ namespace proxypp::rule
       })JSON";
       const auto result = ValidateJsonBySchema(schema_text, document_text);
       BOOST_REQUIRE(result.has_value() == false);
-      BOOST_TEST(result.error().code == Errc::RuleFileSchemaValidationFailed);
+      BOOST_TEST(result.error().code == Errc::JsonSchemaValidationError);
     }
 
     BOOST_AUTO_TEST_CASE(
@@ -118,7 +118,7 @@ namespace proxypp::rule
       })JSON";
       const auto result = ValidateJsonBySchema(schema_text, document_text);
       BOOST_REQUIRE(result.has_value() == false);
-      BOOST_TEST(result.error().code == Errc::InvalidRuleSchema);
+      BOOST_TEST(result.error().code == Errc::InvalidJsonSchema);
     }
 
     BOOST_AUTO_TEST_CASE(
