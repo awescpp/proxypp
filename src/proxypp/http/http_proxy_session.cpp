@@ -4,17 +4,21 @@
  */
 
 #include "http_proxy_session.h"
-
 #include "http_message_utils.h"
 #include "proxypp/log/log.h"
-
+#include "proxypp/rule/http/apply.h"
 #include <boost/url.hpp>
 
 namespace proxypp::http
 {
-  HttpProxySession::HttpProxySession(asio::ip::tcp::socket&& client_sock)
-      : client_sock_{std::move(client_sock)},
-        remote_sock_{client_sock_.get_executor()}
+  HttpProxySession::HttpProxySession(
+    asio::ip::tcp::socket&& client_sock,
+    std::shared_ptr<rule::RuleEngine> rule_engine,
+    std::optional<rule::http::Config> rule_http_config)
+      : client_sock_ { std::move(client_sock) },
+        remote_sock_ { client_sock_.get_executor() },
+        rule_engine_ { std::move(rule_engine) },
+        rule_http_config_ { std::move(rule_http_config) }
   {}
 
   asio::awaitable<void> HttpProxySession::Run()
@@ -61,6 +65,23 @@ namespace proxypp::http
     auto remote_request_header
       = BuildRemoteRequestHeader(*client_request_header, *remote_info);
 
+    auto request_adapter = adapter::BeastRequestAdapter(remote_request_header);
+
+    if(rule_http_config_.has_value())
+      {
+        auto apply_request_result = rule::http::ApplyRequest(
+          *rule_engine_, *rule_http_config_, request_adapter);
+        LOG_HTTP_INFO("request.target: {}", request_adapter.Target());
+        if(!apply_request_result)
+          {
+            LOG_HTTP_ERROR("apply request failed");
+          }
+        else
+          {
+            LOG_HTTP_INFO("apply request rule success");
+          }
+      }
+
     if(!co_await WriteRemoteRequestHeader(remote_request_header))
       {
         co_return ExchangeResult::Close;
@@ -79,6 +100,23 @@ namespace proxypp::http
     if(!remote_response_header.has_value())
       {
         co_return ExchangeResult::Close;
+      }
+
+    auto response_adapter
+      = adapter::BeastResponseAdapter(*remote_response_header);
+    if(rule_http_config_.has_value())
+      {
+        auto apply_response_result
+          = rule::http::ApplyResponse(*rule_engine_, *rule_http_config_,
+                                      request_adapter, response_adapter);
+        if(!apply_response_result)
+          {
+            LOG_HTTP_ERROR("apply response failed");
+          }
+        else
+          {
+            LOG_HTTP_INFO("apply response rule success");
+          }
       }
 
     if(!co_await WriteRemoteResponseHeaderToClient(*remote_response_header))
@@ -136,7 +174,7 @@ namespace proxypp::http
     response.version(11);
     response.reason("Connection Established");
     response.set(http_::field::proxy_connection, "keep-alive");
-    http_::response_serializer<http_::empty_body> serializer{response};
+    http_::response_serializer<http_::empty_body> serializer { response };
     const auto [ec_write, bytes_written] = co_await http_::async_write(
       client_sock_, serializer, asio::as_tuple(asio::use_awaitable));
     if(ec_write)
@@ -150,14 +188,14 @@ namespace proxypp::http
 
   asio::awaitable<void> HttpProxySession::ClientToRemoteTunnel()
   {
-    co_await ForwardViaTunnel(client_read_buffer_, {"client", client_sock_},
-                              {"remote", remote_sock_});
+    co_await ForwardViaTunnel(client_read_buffer_, { "client", client_sock_ },
+                              { "remote", remote_sock_ });
   }
 
   asio::awaitable<void> HttpProxySession::RemoteToClientTunnel()
   {
-    co_await ForwardViaTunnel(remote_read_buffer_, {"remote", remote_sock_},
-                              {"client", client_sock_});
+    co_await ForwardViaTunnel(remote_read_buffer_, { "remote", remote_sock_ },
+                              { "client", client_sock_ });
   }
 
   asio::awaitable<void>
@@ -376,7 +414,7 @@ namespace proxypp::http
   asio::awaitable<std::optional<tcp::resolver::results_type>>
   HttpProxySession::ResolveRemote(const RemoteInfo& remote_info)
   {
-    tcp::resolver resolver{client_sock_.get_executor()};
+    tcp::resolver resolver { client_sock_.get_executor() };
 
     LOG_HTTP_DEBUG("before resolve");
 
@@ -466,7 +504,7 @@ namespace proxypp::http
         request.set(field.name(), field.value());
       }
 
-    http_::request_serializer<http_::empty_body> serializer{request};
+    http_::request_serializer<http_::empty_body> serializer { request };
     const auto [ec, bytes_write] = co_await http_::async_write_header(
       remote_sock_, serializer, asio::as_tuple(asio::use_awaitable));
     if(ec)
@@ -497,14 +535,15 @@ namespace proxypp::http
     std::size_t content_length)
   {
     co_return co_await ForwardExactly(
-      client_read_buffer_, {"client", client_sock_}, {"remote", remote_sock_},
-      content_length);
+      client_read_buffer_, { "client", client_sock_ },
+      { "remote", remote_sock_ }, content_length);
   }
 
   asio::awaitable<bool> HttpProxySession::ForwardRequestBodyByChunked()
   {
-    co_return co_await ForwardChunked(
-      client_read_buffer_, {"client", client_sock_}, {"remote", remote_sock_});
+    co_return co_await ForwardChunked(client_read_buffer_,
+                                      { "client", client_sock_ },
+                                      { "remote", remote_sock_ });
   }
 
   asio::awaitable<std::optional<HttpProxySession::ResponseHeader>>
@@ -549,7 +588,7 @@ namespace proxypp::http
           }
       }
 
-    http_::response_serializer<http_::buffer_body> serializer{response};
+    http_::response_serializer<http_::buffer_body> serializer { response };
     const auto [ec_write, bytes_written] = co_await http_::async_write_header(
       client_sock_, serializer, asio::as_tuple(asio::use_awaitable));
     boost::ignore_unused(bytes_written);
@@ -593,21 +632,23 @@ namespace proxypp::http
     std::size_t content_length)
   {
     co_return co_await ForwardExactly(
-      remote_read_buffer_, {"remote", remote_sock_}, {"client", client_sock_},
-      content_length);
+      remote_read_buffer_, { "remote", remote_sock_ },
+      { "client", client_sock_ }, content_length);
   }
 
   asio::awaitable<bool> HttpProxySession::ForwardResponseBodyByChunked(
     ResponseParser& response_parser)
   {
-    co_return co_await ForwardChunked(
-      remote_read_buffer_, {"remote", remote_sock_}, {"client", client_sock_});
+    co_return co_await ForwardChunked(remote_read_buffer_,
+                                      { "remote", remote_sock_ },
+                                      { "client", client_sock_ });
   }
 
   asio::awaitable<bool> HttpProxySession::ForwardResponseBodyByCloseDelimited()
   {
-    co_return co_await ForwardUntilEof(
-      remote_read_buffer_, {"remote", remote_sock_}, {"client", client_sock_});
+    co_return co_await ForwardUntilEof(remote_read_buffer_,
+                                       { "remote", remote_sock_ },
+                                       { "client", client_sock_ });
   }
 
   asio::awaitable<bool>
@@ -674,7 +715,7 @@ namespace proxypp::http
             buffer.commit(bytes_read);
             LOG_HTTP_DEBUG("read eof from {}, read {} bytes", from_peer.name,
                            bytes_read);
-            co_return ReadSomeResult{.bytes_read = bytes_read, .eof = true};
+            co_return ReadSomeResult { .bytes_read = bytes_read, .eof = true };
           }
 
         if(ec_read == asio::error::operation_aborted)
@@ -697,7 +738,7 @@ namespace proxypp::http
 
     buffer.commit(bytes_read);
 
-    co_return ReadSomeResult{.bytes_read = bytes_read, .eof = false};
+    co_return ReadSomeResult { .bytes_read = bytes_read, .eof = false };
   }
 
   asio::awaitable<std::optional<std::size_t>>

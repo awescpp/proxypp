@@ -7,7 +7,10 @@
 
 #include "body_info.h"
 #include "proxypp/common.h"
-
+#include "proxypp/http/adapter/beast_request_adapter.h"
+#include "proxypp/http/adapter/beast_response_adapter.h"
+#include "proxypp/rule/http/model.h"
+#include "proxypp/rule/rule_engine.h"
 #include <boost/beast.hpp>
 
 namespace beast = boost::beast;
@@ -22,7 +25,10 @@ namespace proxypp::http
   public:
     // rvalue reference here means the caller must transfer ownership of the
     // socket.
-    explicit HttpProxySession(asio::ip::tcp::socket&& client_sock);
+    explicit HttpProxySession(
+      asio::ip::tcp::socket&& client_sock,
+      std::shared_ptr<rule::RuleEngine> rule_engine,
+      std::optional<rule::http::Config> rule_http_config);
 
     asio::awaitable<void> Run();
 
@@ -187,6 +193,9 @@ namespace proxypp::http
   private:
     socket_t client_sock_;
     socket_t remote_sock_;
+
+    std::shared_ptr<rule::RuleEngine> rule_engine_;
+    std::optional<rule::http::Config> rule_http_config_;
 
     beast::flat_buffer client_read_buffer_;
     beast::flat_buffer remote_read_buffer_;

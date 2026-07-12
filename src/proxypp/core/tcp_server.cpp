@@ -4,27 +4,26 @@
  */
 
 #include "tcp_server.h"
-
 #include "proxypp/http/http_proxy_session.h"
 #include "proxypp/log/log.h"
 
-proxypp::core ::TcpServer::TcpServer(asio::any_io_executor ex,
-                                     std::string_view address,
-                                     std::size_t port)
-    : acceptor_(ex), address_(address), port_(port)
+proxypp::core::TcpServer::TcpServer(asio::any_io_executor ex,
+                                    TcpServerOptions options)
+    : acceptor_(ex), options_(std::move(options))
 {}
 
 void proxypp::core::TcpServer::Run()
 {
-  const tcp::endpoint ep{asio::ip::make_address(address_),
-                         static_cast<asio::ip::port_type>(port_)};
+  const tcp::endpoint ep { asio::ip::make_address(std::string { address() }),
+                           static_cast<asio::ip::port_type>(port()) };
 
   boost::system::error_code ec;
 
   acceptor_.open(ep.protocol(), ec);
   if(ec)
     {
-      std::cerr << std::format("TcpServer open {}:{} failed", address_, port_);
+      std::cerr << std::format("TcpServer open {}:{} failed", address(),
+                               port());
       return;
     }
 
@@ -33,7 +32,8 @@ void proxypp::core::TcpServer::Run()
   acceptor_.bind(ep, ec);
   if(ec)
     {
-      std::cerr << std::format("TcpServer bind {}:{} failed", address_, port_);
+      std::cerr << std::format("TcpServer bind {}:{} failed", address(),
+                               port());
       return;
     }
 
@@ -41,7 +41,7 @@ void proxypp::core::TcpServer::Run()
   if(ec)
     {
       std::cerr << std::format("TcpServer start listening on {}:{} failed",
-                               address_, port_);
+                               address(), port());
       return;
     }
 
@@ -64,12 +64,14 @@ void proxypp::core::TcpServer::Run()
 
           LOG_CORE_DEBUG("accept a connection from {}:{}");
 
-          co_await std::make_shared<http::HttpProxySession>(
-            std::move(client_sock))
-            ->Run();
+          auto http_proxy_session = std::make_shared<http::HttpProxySession>(
+            std::move(client_sock), self->rule_engine(),
+            self->http_rule_config());
+
+          co_await http_proxy_session->Run();
         }
     },
     asio::detached);
 
-  LOG_CORE_INFO("proxy++ running on {}:{}", address_, port_);
+  LOG_CORE_INFO("proxy++ running on {}:{}", address(), port());
 }
