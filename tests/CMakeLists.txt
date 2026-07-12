@@ -22,6 +22,7 @@ endfunction()
 proxypp_add_boost_tests(test_helper_json LIBRARIES proxypp::common)
 proxypp_add_boost_tests(test_helper_file LIBRARIES proxypp::common)
 proxypp_add_boost_tests(test_helper_json_schema LIBRARIES proxypp::rule)
+proxypp_add_boost_tests(test_helper_cli LIBRARIES proxypp::common CLI11::CLI11)
 
 # http
 proxypp_add_boost_tests(test_demo)

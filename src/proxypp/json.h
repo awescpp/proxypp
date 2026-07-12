@@ -12,9 +12,5 @@
 namespace proxypp
 {
   using json = jsoncons::ojson;
-
   namespace jsonlib = jsoncons;
-
-  Result<json> ParseJson(std::string_view content);
-
 }

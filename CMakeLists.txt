@@ -51,6 +51,7 @@ add_library(proxypp_common STATIC src/proxypp/error.cpp
         src/proxypp/helper/json_helper.cpp
         src/proxypp/helper/file_helper.cpp
         src/proxypp/helper/json_schema_helper.cpp
+        src/proxypp/helper/cli_helper.cpp
 )
 add_library(proxypp::common ALIAS proxypp_common)
 target_link_libraries(proxypp_common PUBLIC proxypp::options jsoncons::jsoncons)

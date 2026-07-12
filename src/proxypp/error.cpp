@@ -4,6 +4,7 @@
  */
 
 #include "proxypp/error.h"
+#include <magic_enum/magic_enum.hpp>
 #include <utility>
 
 namespace proxypp
@@ -18,8 +19,18 @@ namespace proxypp
         {
         case Errc::Ok: return "success";
         case Errc::JsonParseFailed: return "parse json failed";
+        case Errc::FileNotFound: return "file not found";
+        case Errc::BadFileFormat: return "bad file format";
+        case Errc::InvalidArgument: return "invalid argument";
+        case Errc::InternalError: return "internal error";
+        case Errc::JsonConvertionError: return "convert json failed";
+        case Errc::InvalidJsonSchema: return "invalid json schema";
+        case Errc::UnsupportedJsonSchemaVersion:
+          return "unsupported schema version";
+        case Errc::JsonSchemaValidationError:
+          return "json schema validation error";
         }
-      return "unkown error";
+      return "unknown error";
     }
   };
 
@@ -34,6 +45,11 @@ const boost::system::error_category& proxypp::GetErrorCategory() noexcept
 boost::system::error_code proxypp::make_error_code(Errc errc) noexcept
 {
   return { static_cast<int>(errc), GetErrorCategory() };
+}
+
+std::ostream& proxypp::operator<<(std::ostream& os, Errc errc)
+{
+  return os << magic_enum::enum_name(errc);
 }
 
 proxypp::Error::Error(boost::system::error_code error_code, std::string msg)
