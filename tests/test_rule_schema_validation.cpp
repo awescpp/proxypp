@@ -5,11 +5,11 @@
 
 #define BOOST_TEST_MODULE test_rule_schema_validation
 
+#include "proxypp/helper/json_schema_helper.h"
 #include <boost/test/unit_test.hpp>
 #include <filesystem>
 #include <fstream>
-#include <proxypp/rule/error.h>
-#include <proxypp/rule/schema_validator.h>
+#include <proxypp/error.h>
 #include <sstream>
 
 namespace proxypp::rule
@@ -44,7 +44,8 @@ namespace proxypp::rule
       const auto document = R"JSON({
         "version": 1
       })JSON";
-      const auto result = ValidateJsonBySchema(schema_text, document);
+      const auto result
+        = helper::schema::ValidateJsonBySchema(schema_text, document);
       BOOST_TEST(result.has_value());
     }
 
@@ -72,7 +73,8 @@ namespace proxypp::rule
           ]
         }
       })JSON";
-      const auto result = ValidateJsonBySchema(schema_text, document);
+      const auto result
+        = helper::schema::ValidateJsonBySchema(schema_text, document);
       if(!result.has_value())
         {
           BOOST_TEST_FAIL(result.error().message);
@@ -104,9 +106,10 @@ namespace proxypp::rule
           ]
         }
       })JSON";
-      const auto result = ValidateJsonBySchema(schema_text, document);
+      const auto result
+        = helper::schema::ValidateJsonBySchema(schema_text, document);
       BOOST_REQUIRE(result.has_value() == false);
-      BOOST_TEST(result.error().code == Errc::RuleFileSchemaValidationFailed);
+      BOOST_TEST(result.error().code == Errc::JsonSchemaValidationError);
     }
 
     BOOST_AUTO_TEST_CASE(unknown_top_level_property_should_fail)
@@ -115,9 +118,10 @@ namespace proxypp::rule
         "version": 1,
         "author": "awescpp"
       })JSON";
-      const auto result = ValidateJsonBySchema(schema_text, document);
+      const auto result
+        = helper::schema::ValidateJsonBySchema(schema_text, document);
       BOOST_REQUIRE(result.has_value() == false);
-      BOOST_TEST(result.error().code == Errc::RuleFileSchemaValidationFailed);
+      BOOST_TEST(result.error().code == Errc::JsonSchemaValidationError);
     }
 
     BOOST_AUTO_TEST_SUITE_END()
