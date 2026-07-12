@@ -1,5 +1,10 @@
 # proxy++
 
+[![License](https://img.shields.io/github/license/awescpp/proxypp)](LICENSE)
+![C++20](https://img.shields.io/badge/C%2B%2B-20-blue)
+![CMake](https://img.shields.io/badge/build-CMake-blue)
+![vcpkg](https://img.shields.io/badge/deps-vcpkg-blue)
+
 proxy++ is an open-source C++ proxy infrastructure project, currently focused on HTTP/HTTPS network proxying, extensibility, observability, and practical enterprise use cases.
 
 > proxy++ is currently in early development. APIs, configuration, command-line options, and runtime behavior may change before the first stable release.
