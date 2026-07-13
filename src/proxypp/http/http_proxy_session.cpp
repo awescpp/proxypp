@@ -265,7 +265,17 @@ namespace proxypp::http
       asio::as_tuple(asio::use_awaitable));
     if(ec)
       {
-        LOG_HTTP_ERROR("read client request header error, {}", ec.message());
+        if(ec == asio::error::eof || ec == beast::http::error::end_of_stream)
+          {
+            LOG_HTTP_DEBUG(
+              "client closed connection before sending request header");
+          }
+        else
+          {
+            LOG_HTTP_ERROR("read client request header error, {}",
+                           ec.message());
+          }
+
         co_return std::nullopt;
       }
 
