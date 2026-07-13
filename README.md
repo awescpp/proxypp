@@ -1,17 +1,21 @@
 # proxy++
 
+[![CI](https://github.com/awescpp/proxypp/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/awescpp/proxypp/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/awescpp/proxypp)](LICENSE)
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-blue)
 ![CMake](https://img.shields.io/badge/build-CMake-blue)
 ![vcpkg](https://img.shields.io/badge/deps-vcpkg-blue)
 
-proxy++ is an open-source C++ proxy infrastructure project, currently focused on HTTP/HTTPS network proxying, extensibility, observability, and practical enterprise use cases.
+proxy++ is an open-source C++ proxy infrastructure project, currently focused on HTTP/HTTPS network proxying,
+extensibility, observability, and practical enterprise use cases.
 
-> proxy++ is currently in early development. APIs, configuration, command-line options, and runtime behavior may change before the first stable release.
+> proxy++ is currently in early development. APIs, configuration, command-line options, and runtime behavior may change
+> before the first stable release.
 
 ## Goals
 
-proxy++ aims to provide a simple, extensible, and developer-friendly foundation for building proxy, traffic processing, and protocol mediation tools:
+proxy++ aims to provide a simple, extensible, and developer-friendly foundation for building proxy, traffic processing,
+and protocol mediation tools:
 
 * HTTP/HTTPS proxy forwarding
 * traffic debugging and inspection
@@ -19,7 +23,8 @@ proxy++ aims to provide a simple, extensible, and developer-friendly foundation 
 * rule-based request/response processing
 * future programmable filtering and observability features
 
-The project is not designed to be just another high-performance proxy. Instead, proxy++ focuses on ease of use, extensibility, and practical integration scenarios.
+The project is not designed to be just another high-performance proxy. Instead, proxy++ focuses on ease of use,
+extensibility, and practical integration scenarios.
 
 ## Current status
 
@@ -95,7 +100,8 @@ pnpm test:all
 
 proxy++ is currently in early development and is not accepting external pull requests yet.
 
-The project direction, architecture, and public APIs are still evolving. Contributions may be opened later when the project becomes more stable.
+The project direction, architecture, and public APIs are still evolving. Contributions may be opened later when the
+project becomes more stable.
 
 ## License
 

@@ -1,0 +1,204 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "master"
+    paths:
+      - app/**
+      - src/**
+      - tests/**
+      - e2e/**
+      - schemas/**
+      - CMakeLists.txt
+      - vcpkg.json
+      - ".github/workflows/ci.yml"
+
+  pull_request:
+    branches:
+      - "master"
+    paths:
+      - app/**
+      - src/**
+      - tests/**
+      - e2e/**
+      - schemas/**
+      - CMakeLists.txt
+      - vcpkg.json
+      - ".github/workflows/ci.yml"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-configure:
+    name: Windows / Configure
+    runs-on: windows-2022
+    env:
+      VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}\\.vcpkg-bincache,readwrite"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Restore vcpkg binary cache
+        uses: actions/cache@v6
+        with:
+          path: .vcpkg-bincache
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'CMakeLists.txt') }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-
+
+      - name: Configure
+        shell: pwsh
+        run: |
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake"
+
+      - name: Build Debug
+        shell: pwsh
+        run: |
+          cmake --build build --config Debug --parallel
+
+      - name: Test Debug
+        shell: pwsh
+        run: |
+          ctest --test-dir build -C Debug --output-on-failure
+
+      - name: Build Release
+        shell: pwsh
+        run: |
+          cmake --build build --config Release --parallel
+
+      - name: Test Release
+        shell: pwsh
+        run: |
+          ctest --test-dir build -C Release --output-on-failure
+
+      # region: E2E Test
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Enable pnpm
+        shell: pwsh
+        run: |
+          corepack enable
+
+      - name: Install Node dependencies
+        shell: pwsh
+        run: |
+          pnpm install --frozen-lockfile
+
+      - name: Resolve Release proxy++ binary
+        shell: pwsh
+        run: |
+          $exes = Get-ChildItem -Path build -Recurse -Filter "proxy++.exe"
+          if (-not $exes) {
+            Write-Error "proxy++.exe not found under build directory."
+            exit 1
+          }
+
+          Write-Host "Found proxy++ candidates:"
+          $exes | ForEach-Object {
+            Write-Host "  $($_.FullName)"
+          }
+
+          $exe = $exes |
+            Where-Object { $_.FullName -match "\\Release\\" } |
+            Select-Object -First 1
+          if (-not $exe) {
+            Write-Error "Release proxy++.exe not found."
+            exit 1
+          }
+
+          Write-Host "Using Release proxy++ binary: $($exe.FullName)"
+          "PROXYPP_BIN=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+
+      - name: Run E2E tests with Release proxy++.exe
+        shell: pwsh
+        run: |
+          Write-Host "PROXYPP_BIN=$env:PROXYPP_BIN"
+          if (-not (Test-Path $env:PROXYPP_BIN)) {
+            Write-Error "PROXYPP_BIN does not exist: $env:PROXYPP_BIN"
+            exit 1
+          }
+
+          pnpm test:e2e
+
+      # endregion
+
+      - name: Collect Debug artifacts
+        shell: pwsh
+        run: |
+          $config = "Debug"
+          $artifactDir = "artifacts\proxypp-windows-x64-debug"
+          New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
+
+          $exe = Get-ChildItem -Path build -Recurse -Filter "proxy++.exe" |
+            Where-Object { $_.FullName -match "\\$config\\" } |
+            Select-Object -First 1
+
+          if (-not $exe) {
+            Write-Error "proxy++.exe not found for $config."
+            exit 1
+          }
+
+          Write-Host "Found $config proxy++.exe at: $($exe.FullName)"
+
+          Copy-Item $exe.FullName $artifactDir
+
+          $exeDir = Split-Path $exe.FullName -Parent
+          Get-ChildItem -Path $exeDir -Filter "*.dll" | ForEach-Object {
+            Copy-Item $_.FullName $artifactDir
+          }
+
+          Get-ChildItem -Path $artifactDir
+
+
+      - name: Collect Release artifact
+        shell: pwsh
+        run: |
+          $config = "Release"
+          $artifactDir = "artifacts\proxypp-windows-x64-release"
+          New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
+
+          $exe = Get-ChildItem -Path build -Recurse -Filter "proxy++.exe" |
+            Where-Object { $_.FullName -match "\\$config\\" } |
+            Select-Object -First 1
+
+          if (-not $exe) {
+            Write-Error "proxy++.exe not found for $config."
+            exit 1
+          }
+
+          Write-Host "Found $config proxy++.exe at: $($exe.FullName)"
+
+          Copy-Item $exe.FullName $artifactDir
+
+          $exeDir = Split-Path $exe.FullName -Parent
+          Get-ChildItem -Path $exeDir -Filter "*.dll" | ForEach-Object {
+            Copy-Item $_.FullName $artifactDir
+          }
+
+          Get-ChildItem -Path $artifactDir
+
+
+      - name: Upload Debug artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: proxypp-windows-x64-debug
+          path: artifacts/proxypp-windows-x64-debug
+          if-no-files-found: error
+
+      - name: Upload Release artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: proxypp-windows-x64-release
+          path: artifacts/proxypp-windows-x64-release
+          if-no-files-found: error
+
