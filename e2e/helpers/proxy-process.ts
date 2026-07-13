@@ -8,7 +8,11 @@ import { execa, Options } from 'execa'
 import { connect } from 'node:net'
 import { resolve as resolvePath } from 'node:path'
 import { existsSync } from 'node:fs'
+import { mkdtemp } from 'node:fs/promises'
+import path from 'node:path'
+import os from 'node:os'
 import * as process from 'node:process'
+import { writeRulesFile } from './rule-files'
 
 export interface ProxyProcess {
   readonly executable: string
@@ -19,9 +23,22 @@ export interface ProxyProcess {
 }
 
 export async function startProxyProcess(port: number): Promise<ProxyProcess> {
+  const runtimeDir = await mkdtemp(path.join(os.tmpdir(), 'proxypp-e2e-'))
+
+  // create a sample rule file to test
+  const rulesFile = await writeRulesFile(runtimeDir)
+
   const host = '127.0.0.1'
   const executable = resolveProxyExecutable()
-  const args = ['http', '--bind', host, '--port', String(port)]
+  const args = [
+    'http',
+    '--bind',
+    host,
+    '--port',
+    String(port),
+    '--rule-file',
+    rulesFile,
+  ]
   const subprocess = execa(executable, args, {
     cwd: process.cwd(),
     shell: false,
