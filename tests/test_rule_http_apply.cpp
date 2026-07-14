@@ -200,7 +200,7 @@ namespace proxypp::rule::http::test
 
     const auto result = ApplyRequest(engine, http_config, *adapter);
     BOOST_REQUIRE(!result.has_value());
-    BOOST_TEST(result.error().code == Errc::InvalidAction);
+    BOOST_TEST(result.error().code() == Errc::InvalidAction);
   }
 
   BOOST_AUTO_TEST_SUITE_END()

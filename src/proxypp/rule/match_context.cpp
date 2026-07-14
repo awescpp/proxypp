@@ -58,14 +58,14 @@ namespace proxypp::rule
     if(!global.has_value())
       {
         return Unexpected(
-          Error(Errc::RuleContextPreparationFailed, global.error().message));
+          Error(Errc::RuleContextPreparationFailed, global.error().message()));
       }
 
     if(auto result = global->SetProperty(name, std::move(value));
        !result.has_value())
       {
         return Unexpected(
-          Error(Errc::RuleContextPreparationFailed, result.error().message));
+          Error(Errc::RuleContextPreparationFailed, result.error().message()));
       }
 
     return {};

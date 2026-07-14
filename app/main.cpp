@@ -110,14 +110,16 @@ int main(int argc, char** argv)
   auto rule_config = LoadRuleConfig(rule_file_path);
   if(!rule_config)
     {
-      std::cerr << "load rule config failed, " << rule_config.error().message;
+      std::cerr << "load rule config failed, "
+                << rule_config.error().message();
       return EXIT_FAILURE;
     }
 
   auto rule_engine = InitRuleEngine();
   if(!rule_engine)
     {
-      std::cerr << "init rule engine failed, " << rule_engine.error().message;
+      std::cerr << "init rule engine failed, "
+                << rule_engine.error().message();
     }
 
   asio::io_context io;

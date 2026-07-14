@@ -52,15 +52,15 @@ std::ostream& proxypp::operator<<(std::ostream& os, Errc errc)
 }
 
 proxypp::Error::Error(boost::system::error_code error_code, std::string msg)
-    : code(error_code), message(std::move(msg))
+    : code_(error_code), message_(std::move(msg))
 {
-  if(message.empty() && code)
+  if(message_.empty() && code_)
     {
-      message = code.message();
+      message_ = code_.message();
     }
 }
 
 proxypp::Error::operator bool() const noexcept
 {
-  return static_cast<bool>(code);
+  return static_cast<bool>(code_);
 }

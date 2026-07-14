@@ -106,7 +106,7 @@ namespace proxypp::script::qjs::test
     BOOST_TEST(!value->IsValid());
     auto result = value->ToString();
     BOOST_REQUIRE(!result.has_value());
-    BOOST_TEST(result.error().code == Errc::InvalidArgument);
+    BOOST_TEST(result.error().code() == Errc::InvalidArgument);
   }
 
   BOOST_AUTO_TEST_CASE(

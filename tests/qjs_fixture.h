@@ -26,7 +26,7 @@ namespace proxypp::script::qjs::test
   void RequireErrorCode(const Result<T>& result, Errc errc)
   {
     BOOST_REQUIRE(!result.has_value());
-    BOOST_TEST(result.error().code == errc);
+    BOOST_TEST(result.error().code() == errc);
   }
 
   template <typename T>
@@ -34,8 +34,8 @@ namespace proxypp::script::qjs::test
                                    std::string_view expected)
   {
     BOOST_REQUIRE(!result.has_value());
-    const auto& message = result.error().message;
+    std::string message = result.error().message();
     BOOST_TEST_INFO("actual message: " << message);
-    BOOST_TEST(result.error().message.find(expected) != std::string::npos);
+    BOOST_TEST(result.error().message().find(expected) != std::string::npos);
   }
 }

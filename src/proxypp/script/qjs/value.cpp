@@ -407,7 +407,7 @@ namespace proxypp::script::qjs
     if(!length.has_value())
       {
         return Unexpected(
-          Error(Errc::InvalidArgument, length.error().message));
+          Error(Errc::InvalidArgument, length.error().message()));
       }
 
     return *length;

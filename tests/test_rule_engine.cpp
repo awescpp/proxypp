@@ -34,9 +34,7 @@ namespace proxypp::rule::test
 
   auto MakeFilter()
   {
-    return [](const TestRule& rule) {
-      return rule.enabled;
-    };
+    return [](const TestRule& rule) { return rule.enabled; };
   }
 
   auto MakeInjector(TestState& state)
@@ -73,18 +71,15 @@ namespace proxypp::rule::test
   {
     auto engine = CreateEngine();
     TestState state;
-    const std::vector<TestRule> rules {
-      TestRule {.enabled = true,
-                .match = std::nullopt,
-                .actions = std::vector<int>({1, 2, 3})}};
-    const auto result = engine.ApplyRules(rules,
-                                          MakeFilter(),
-                                          MakeInjector(state),
-                                          MakeMatchGetter(),
-                                          MakeActionsGetter(),
-                                          MakeActionExecutor(state));
+    const std::vector<TestRule> rules { TestRule {
+      .enabled = true,
+      .match = std::nullopt,
+      .actions = std::vector<int>({ 1, 2, 3 }) } };
+    const auto result = engine.ApplyRules(
+      rules, MakeFilter(), MakeInjector(state), MakeMatchGetter(),
+      MakeActionsGetter(), MakeActionExecutor(state));
     BOOST_REQUIRE(result.has_value());
-    BOOST_TEST(state.executed_actions == std::vector({1, 2, 3}),
+    BOOST_TEST(state.executed_actions == std::vector({ 1, 2, 3 }),
                boost::test_tools::per_element());
   }
 
@@ -93,21 +88,18 @@ namespace proxypp::rule::test
     auto engine = CreateEngine();
     TestState state;
     const std::vector<TestRule> rules {
-      TestRule {.enabled = false,
-                .match = std::nullopt,
-                .actions = std::vector<int>({1})},
-      TestRule {.enabled = true,
-                .match = std::nullopt,
-                .actions = std::vector<int>({2})},
+      TestRule { .enabled = false,
+                 .match = std::nullopt,
+                 .actions = std::vector<int>({ 1 }) },
+      TestRule { .enabled = true,
+                 .match = std::nullopt,
+                 .actions = std::vector<int>({ 2 }) },
     };
-    const auto result = engine.ApplyRules(rules,
-                                          MakeFilter(),
-                                          MakeInjector(state),
-                                          MakeMatchGetter(),
-                                          MakeActionsGetter(),
-                                          MakeActionExecutor(state));
+    const auto result = engine.ApplyRules(
+      rules, MakeFilter(), MakeInjector(state), MakeMatchGetter(),
+      MakeActionsGetter(), MakeActionExecutor(state));
     BOOST_REQUIRE(result.has_value());
-    BOOST_TEST(state.executed_actions == std::vector<int>({2}),
+    BOOST_TEST(state.executed_actions == std::vector<int>({ 2 }),
                boost::test_tools::per_element());
   }
 
@@ -119,20 +111,17 @@ namespace proxypp::rule::test
     TestState state;
 
     const std::vector<TestRule> rules {
-      TestRule {.enabled = true,
-                .match = std::nullopt,
-                .actions = std::vector<int>({1})},
+      TestRule { .enabled = true,
+                 .match = std::nullopt,
+                 .actions = std::vector<int>({ 1 }) },
     };
 
-    const auto result = engine.ApplyRules(rules,
-                                          MakeFilter(),
-                                          MakeInjector(state),
-                                          MakeMatchGetter(),
-                                          MakeActionsGetter(),
-                                          MakeActionExecutor(state));
+    const auto result = engine.ApplyRules(
+      rules, MakeFilter(), MakeInjector(state), MakeMatchGetter(),
+      MakeActionsGetter(), MakeActionExecutor(state));
     BOOST_REQUIRE(result.has_value());
     BOOST_TEST(state.inject_cnt == 0);
-    BOOST_TEST(state.executed_actions == std::vector<int>({1}),
+    BOOST_TEST(state.executed_actions == std::vector<int>({ 1 }),
                boost::test_tools::per_element());
   }
 
@@ -141,22 +130,19 @@ namespace proxypp::rule::test
     auto engine = CreateEngine();
     TestState state;
     const std::vector<TestRule> rules {
-      TestRule {.enabled = true,
-                .match = Match {.expr = "1 + 1 === 3"},
-                .actions = std::vector<int>({1})},
-      TestRule {.enabled = true,
-                .match = Match {.expr = "\"hello\".length === 5"},
-                .actions = std::vector<int>({2, 3})},
+      TestRule { .enabled = true,
+                 .match = Match { .expr = "1 + 1 === 3" },
+                 .actions = std::vector<int>({ 1 }) },
+      TestRule { .enabled = true,
+                 .match = Match { .expr = "\"hello\".length === 5" },
+                 .actions = std::vector<int>({ 2, 3 }) },
     };
-    const auto result = engine.ApplyRules(rules,
-                                          MakeFilter(),
-                                          MakeInjector(state),
-                                          MakeMatchGetter(),
-                                          MakeActionsGetter(),
-                                          MakeActionExecutor(state));
+    const auto result = engine.ApplyRules(
+      rules, MakeFilter(), MakeInjector(state), MakeMatchGetter(),
+      MakeActionsGetter(), MakeActionExecutor(state));
     BOOST_REQUIRE(result.has_value());
     BOOST_TEST(state.inject_cnt == 2);
-    BOOST_TEST(state.executed_actions == std::vector<int>({2, 3}),
+    BOOST_TEST(state.executed_actions == std::vector<int>({ 2, 3 }),
                boost::test_tools::per_element());
   }
 
@@ -165,16 +151,13 @@ namespace proxypp::rule::test
     auto engine = CreateEngine();
     TestState state;
     const std::vector<TestRule> rules {
-      TestRule {.enabled = true,
-                .match = Match {.expr = "1 + 1 === 3"},
-                .actions = std::vector<int>({1, 2, 3})},
+      TestRule { .enabled = true,
+                 .match = Match { .expr = "1 + 1 === 3" },
+                 .actions = std::vector<int>({ 1, 2, 3 }) },
     };
-    const auto result = engine.ApplyRules(rules,
-                                          MakeFilter(),
-                                          MakeInjector(state),
-                                          MakeMatchGetter(),
-                                          MakeActionsGetter(),
-                                          MakeActionExecutor(state));
+    const auto result = engine.ApplyRules(
+      rules, MakeFilter(), MakeInjector(state), MakeMatchGetter(),
+      MakeActionsGetter(), MakeActionExecutor(state));
     BOOST_REQUIRE(result.has_value());
     BOOST_TEST(state.inject_cnt == 1);
     BOOST_TEST(state.executed_actions.empty());
@@ -186,18 +169,15 @@ namespace proxypp::rule::test
     auto engine = CreateEngine();
     TestState state;
     const std::vector<TestRule> rules {
-      TestRule {.enabled = true,
-                .match = Match {.expr = "\"foo\""},
-                .actions = std::vector<int>({1, 2, 3})},
+      TestRule { .enabled = true,
+                 .match = Match { .expr = "\"foo\"" },
+                 .actions = std::vector<int>({ 1, 2, 3 }) },
     };
-    const auto result = engine.ApplyRules(rules,
-                                          MakeFilter(),
-                                          MakeInjector(state),
-                                          MakeMatchGetter(),
-                                          MakeActionsGetter(),
-                                          MakeActionExecutor(state));
+    const auto result = engine.ApplyRules(
+      rules, MakeFilter(), MakeInjector(state), MakeMatchGetter(),
+      MakeActionsGetter(), MakeActionExecutor(state));
     BOOST_REQUIRE(!result.has_value());
-    BOOST_TEST(result.error().code == Errc::MatchResultNotBoolean);
+    BOOST_TEST(result.error().code() == Errc::MatchResultNotBoolean);
     BOOST_TEST(state.executed_actions.empty());
   }
 
@@ -207,18 +187,15 @@ namespace proxypp::rule::test
     auto engine = CreateEngine();
     TestState state;
     const std::vector<TestRule> rules {
-      TestRule {.enabled = true,
-                .match = Match {.expr = "\"foo"},
-                .actions = std::vector<int>({1, 2, 3})},
+      TestRule { .enabled = true,
+                 .match = Match { .expr = "\"foo" },
+                 .actions = std::vector<int>({ 1, 2, 3 }) },
     };
-    const auto result = engine.ApplyRules(rules,
-                                          MakeFilter(),
-                                          MakeInjector(state),
-                                          MakeMatchGetter(),
-                                          MakeActionsGetter(),
-                                          MakeActionExecutor(state));
+    const auto result = engine.ApplyRules(
+      rules, MakeFilter(), MakeInjector(state), MakeMatchGetter(),
+      MakeActionsGetter(), MakeActionExecutor(state));
     BOOST_REQUIRE(!result.has_value());
-    BOOST_TEST(result.error().code == Errc::MatchEvaluationFailed);
+    BOOST_TEST(result.error().code() == Errc::MatchEvaluationFailed);
     BOOST_TEST(state.executed_actions.empty());
   }
 
@@ -227,9 +204,9 @@ namespace proxypp::rule::test
     auto engine = CreateEngine();
     TestState state;
     const std::vector<TestRule> rules {
-      TestRule {.enabled = true,
-                .match = std::nullopt,
-                .actions = std::vector<int>({1, 2, 3})},
+      TestRule { .enabled = true,
+                 .match = std::nullopt,
+                 .actions = std::vector<int>({ 1, 2, 3 }) },
     };
 
     auto execute_action = [&state](int action) -> Result<void> {
@@ -237,20 +214,17 @@ namespace proxypp::rule::test
       if(action == 2)
         {
           return Unexpected(
-            Error {Errc::ActionExecutionFailed, "test action failed"});
+            Error { Errc::ActionExecutionFailed, "test action failed" });
         }
       return {};
     };
 
-    const auto result = engine.ApplyRules(rules,
-                                          MakeFilter(),
-                                          MakeInjector(state),
-                                          MakeMatchGetter(),
-                                          MakeActionsGetter(),
-                                          execute_action);
+    const auto result = engine.ApplyRules(
+      rules, MakeFilter(), MakeInjector(state), MakeMatchGetter(),
+      MakeActionsGetter(), execute_action);
     BOOST_REQUIRE(!result.has_value());
-    BOOST_TEST(result.error().code == Errc::ActionExecutionFailed);
-    BOOST_TEST(state.executed_actions == std::vector<int>({1, 2}),
+    BOOST_TEST(result.error().code() == Errc::ActionExecutionFailed);
+    BOOST_TEST(state.executed_actions == std::vector<int>({ 1, 2 }),
                boost::test_tools::per_element());
   }
 
@@ -260,23 +234,20 @@ namespace proxypp::rule::test
     auto engine = CreateEngine();
     TestState state;
     const std::vector<TestRule> rules {
-      TestRule {.enabled = true,
-                .match = Match {.expr = "true"},
-                .actions = std::vector<int>({1, 2, 3})},
+      TestRule { .enabled = true,
+                 .match = Match { .expr = "true" },
+                 .actions = std::vector<int>({ 1, 2, 3 }) },
     };
 
     auto inject_context = [](MatchContext&) -> Result<void> {
-      return Unexpected(Error {Errc::RuleContextPreparationFailed});
+      return Unexpected(Error { Errc::RuleContextPreparationFailed });
     };
 
-    const auto result = engine.ApplyRules(rules,
-                                          MakeFilter(),
-                                          inject_context,
-                                          MakeMatchGetter(),
-                                          MakeActionsGetter(),
-                                          MakeActionExecutor(state));
+    const auto result = engine.ApplyRules(
+      rules, MakeFilter(), inject_context, MakeMatchGetter(),
+      MakeActionsGetter(), MakeActionExecutor(state));
     BOOST_REQUIRE(!result.has_value());
-    BOOST_TEST(result.error().code == Errc::RuleContextPreparationFailed);
+    BOOST_TEST(result.error().code() == Errc::RuleContextPreparationFailed);
     BOOST_TEST(state.executed_actions.empty());
   }
 

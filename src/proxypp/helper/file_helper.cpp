@@ -17,12 +17,16 @@ namespace proxypp::helper::file
     if(!file)
       {
         return Unexpected(
+          // TODO: use FileReadFailed
           Error(Errc::InvalidArgument,
                 std::format("failed to open file: {}", path.string())));
       }
 
     std::stringstream buffer;
     buffer << file.rdbuf();
+
+    // TODO: check if(file.bad())
+
     return buffer.str();
   }
 }

@@ -31,7 +31,7 @@ namespace proxypp::helper::schema
       const auto result = ValidateJsonBySchema(schema_text, document_text);
       if(!result.has_value())
         {
-          BOOST_TEST_FAIL(result.error().message);
+          BOOST_TEST_FAIL(result.error().message());
         }
       BOOST_REQUIRE(result.has_value());
     }
@@ -55,7 +55,7 @@ namespace proxypp::helper::schema
       })JSON";
       const auto result = ValidateJsonBySchema(schema_text, document_text);
       BOOST_REQUIRE(result.has_value() == false);
-      BOOST_TEST(result.error().code == Errc::JsonParseFailed);
+      BOOST_TEST(result.error().code() == Errc::JsonParseFailed);
     }
 
     BOOST_AUTO_TEST_CASE(validate_should_fail_with_invalid_document_json)
@@ -76,7 +76,7 @@ namespace proxypp::helper::schema
       })JSON";
       const auto result = ValidateJsonBySchema(schema_text, document_text);
       BOOST_REQUIRE(result.has_value() == false);
-      BOOST_TEST(result.error().code == Errc::JsonParseFailed);
+      BOOST_TEST(result.error().code() == Errc::JsonParseFailed);
     }
 
     BOOST_AUTO_TEST_CASE(
@@ -97,7 +97,7 @@ namespace proxypp::helper::schema
       })JSON";
       const auto result = ValidateJsonBySchema(schema_text, document_text);
       BOOST_REQUIRE(result.has_value() == false);
-      BOOST_TEST(result.error().code == Errc::JsonSchemaValidationFailed);
+      BOOST_TEST(result.error().code() == Errc::JsonSchemaValidationFailed);
     }
 
     BOOST_AUTO_TEST_CASE(
@@ -119,8 +119,8 @@ namespace proxypp::helper::schema
       })JSON";
       const auto result = ValidateJsonBySchema(schema_text, document_text);
       BOOST_REQUIRE(result.has_value() == false);
-      BOOST_TEST(result.error().code == Errc::InvalidJsonSchema);
-      BOOST_TEST_MESSAGE(result.error().message);
+      BOOST_TEST(result.error().code() == Errc::InvalidJsonSchema);
+      BOOST_TEST_MESSAGE(result.error().message());
     }
 
     BOOST_AUTO_TEST_CASE(
@@ -140,7 +140,7 @@ namespace proxypp::helper::schema
       })JSON";
       const auto result = ValidateJsonBySchema(schema_text, document_text);
       BOOST_REQUIRE(result.has_value() == false);
-      BOOST_TEST(result.error().code == Errc::InvalidJsonSchema);
+      BOOST_TEST(result.error().code() == Errc::InvalidJsonSchema);
     }
 
     BOOST_AUTO_TEST_CASE(
@@ -161,7 +161,7 @@ namespace proxypp::helper::schema
       })JSON";
       const auto result = ValidateJsonBySchema(schema_text, document_text);
       BOOST_REQUIRE(result.has_value() == false);
-      BOOST_TEST(result.error().code == Errc::InvalidJsonSchema);
+      BOOST_TEST(result.error().code() == Errc::InvalidJsonSchema);
     }
 
     BOOST_AUTO_TEST_CASE(
@@ -182,8 +182,8 @@ namespace proxypp::helper::schema
       })JSON";
       const auto result = ValidateJsonBySchema(schema_text, document_text);
       BOOST_REQUIRE(result.has_value() == false);
-      BOOST_TEST_MESSAGE(result.error().message);
-      BOOST_TEST(result.error().code == Errc::InvalidJsonSchema);
+      BOOST_TEST_MESSAGE(result.error().message());
+      BOOST_TEST(result.error().code() == Errc::InvalidJsonSchema);
     }
 
     // validate_schema_with_draft_2020_12_should_return_success reference

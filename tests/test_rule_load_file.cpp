@@ -67,7 +67,7 @@ namespace proxypp::rule::test
 
     const auto load_result = LoadRulesFromFile(rule_file_path);
     BOOST_REQUIRE(!load_result.has_value());
-    BOOST_TEST(load_result.error().code == Errc::InvalidArgument);
+    BOOST_TEST(load_result.error().code() == Errc::InvalidArgument);
   }
 
 }

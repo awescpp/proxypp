@@ -7,6 +7,7 @@
 
 #include <boost/system/error_code.hpp>
 #include <string>
+#include <string_view>
 
 namespace proxypp
 {
@@ -34,16 +35,25 @@ namespace proxypp
 
   std::ostream& operator<<(std::ostream& os, Errc errc);
 
-  struct Error
+  class Error
   {
-    boost::system::error_code code;
-    std::string message;
-
-    explicit Error() = default;
+  public:
+    Error() = default;
 
     explicit Error(boost::system::error_code error_code, std::string msg = {});
 
     explicit operator bool() const noexcept;
+
+    [[nodiscard]] boost::system::error_code code() const noexcept
+    {
+      return code_;
+    }
+
+    [[nodiscard]] std::string message() const noexcept { return message_; }
+
+  private:
+    boost::system::error_code code_;
+    std::string message_;
   };
 }
 
