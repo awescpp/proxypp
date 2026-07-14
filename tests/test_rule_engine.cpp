@@ -266,7 +266,7 @@ namespace proxypp::rule::test
     };
 
     auto inject_context = [](MatchContext&) -> Result<void> {
-      return Unexpected(Error {Errc::ContextInjectionFailed});
+      return Unexpected(Error {Errc::RuleContextPreparationFailed});
     };
 
     const auto result = engine.ApplyRules(rules,
@@ -276,7 +276,7 @@ namespace proxypp::rule::test
                                           MakeActionsGetter(),
                                           MakeActionExecutor(state));
     BOOST_REQUIRE(!result.has_value());
-    BOOST_TEST(result.error().code == Errc::ContextInjectionFailed);
+    BOOST_TEST(result.error().code == Errc::RuleContextPreparationFailed);
     BOOST_TEST(state.executed_actions.empty());
   }
 

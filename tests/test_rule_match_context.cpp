@@ -93,7 +93,7 @@ namespace proxypp::rule::test
 
     auto add_result = context.AddObject("an_obj", std::move(*null_value));
     BOOST_REQUIRE(!add_result.has_value());
-    BOOST_TEST(add_result.error().code == Errc::ContextInjectionFailed);
+    BOOST_TEST(add_result.error().code == Errc::RuleContextPreparationFailed);
   }
 
   BOOST_AUTO_TEST_CASE(
@@ -130,7 +130,7 @@ namespace proxypp::rule::test
     auto add_result = context.AddGlobalValue("prop", std::move(*value));
     BOOST_REQUIRE(!add_result.has_value());
 
-    BOOST_TEST(add_result.error().code == Errc::ContextInjectionFailed);
+    BOOST_TEST(add_result.error().code == Errc::RuleContextPreparationFailed);
   }
 
   BOOST_AUTO_TEST_SUITE_END()

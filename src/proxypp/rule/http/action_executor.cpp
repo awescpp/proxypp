@@ -45,8 +45,7 @@ proxypp::rule::http::ExecuteRequestAction(const Action& action,
 {
   if(action.target != Target::Header)
     {
-      return Unexpected(
-        Error { Errc::UnsupportedAction, "unsupported target" });
+      return Unexpected(Error { Errc::InvalidAction, "invalid target" });
     }
 
   if(std::holds_alternative<data::HeaderNameData>(action.data))
@@ -57,7 +56,8 @@ proxypp::rule::http::ExecuteRequestAction(const Action& action,
         {
           return Unexpected(
             Error { Errc::InvalidAction,
-                    std::format("unsupported header {}", data.name) });
+                    std::format("modifying header '{}' is not supported",
+                                data.name) });
         }
     }
 
@@ -69,7 +69,8 @@ proxypp::rule::http::ExecuteRequestAction(const Action& action,
         {
           return Unexpected(
             Error { Errc::InvalidAction,
-                    std::format("unsupported header {}", data.name) });
+                    std::format("modifying header '{}' is not supported",
+                                data.name) });
         }
     }
 
@@ -124,8 +125,7 @@ proxypp::rule::http::ExecuteRequestAction(const Action& action,
                                 "remove header requires HeaderNameData" });
     }
 
-  return Unexpected(
-    Error { Errc::UnsupportedAction, "unsupported operation" });
+  return Unexpected(Error { Errc::InvalidAction, "invalid operation" });
 }
 
 proxypp::Result<void>
@@ -134,8 +134,7 @@ proxypp::rule::http::ExecuteResponseAction(const Action& action,
 {
   if(action.target != Target::Header)
     {
-      return Unexpected(
-        Error { Errc::UnsupportedAction, "unsupported target" });
+      return Unexpected(Error { Errc::InvalidAction, "invalid target" });
     }
 
   if(std::holds_alternative<data::HeaderNameData>(action.data))
@@ -146,7 +145,8 @@ proxypp::rule::http::ExecuteResponseAction(const Action& action,
         {
           return Unexpected(
             Error { Errc::InvalidAction,
-                    std::format("unsupported header {}", data.name) });
+                    std::format("modifying header '{}' is not supported",
+                                data.name) });
         }
     }
 
@@ -158,7 +158,8 @@ proxypp::rule::http::ExecuteResponseAction(const Action& action,
         {
           return Unexpected(
             Error { Errc::InvalidAction,
-                    std::format("unsupported header {}", data.name) });
+                    std::format("modifying header '{}' is not supported",
+                                data.name) });
         }
     }
 
@@ -213,6 +214,5 @@ proxypp::rule::http::ExecuteResponseAction(const Action& action,
                                 "remove header requires HeaderNameData" });
     }
 
-  return Unexpected(
-    Error { Errc::UnsupportedAction, "unsupported operation" });
+  return Unexpected(Error { Errc::InvalidAction, "invalid operation" });
 }

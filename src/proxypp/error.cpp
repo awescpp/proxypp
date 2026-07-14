@@ -20,15 +20,14 @@ namespace proxypp
         case Errc::Ok: return "success";
         case Errc::JsonParseFailed: return "parse json failed";
         case Errc::FileNotFound: return "file not found";
+        case Errc::FileReadFailed: return "file read failed";
         case Errc::BadFileFormat: return "bad file format";
         case Errc::InvalidArgument: return "invalid argument";
         case Errc::InternalError: return "internal error";
-        case Errc::JsonConvertionError: return "convert json failed";
+        case Errc::JsonConversionFailed: return "convert json failed";
         case Errc::InvalidJsonSchema: return "invalid json schema";
-        case Errc::UnsupportedJsonSchemaVersion:
-          return "unsupported schema version";
-        case Errc::JsonSchemaValidationError:
-          return "json schema validation error";
+        case Errc::JsonSchemaValidationFailed:
+          return "json schema validation failed";
         }
       return "unknown error";
     }

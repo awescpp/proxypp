@@ -14,15 +14,18 @@ namespace proxypp
   enum class Errc
   {
     Ok = 0,
-    InvalidArgument,
+
     InternalError,
+    InvalidArgument,
+
     FileNotFound,
+    FileReadFailed,
     BadFileFormat,
+
     JsonParseFailed,
-    JsonConvertionError,
+    JsonConversionFailed,
     InvalidJsonSchema,
-    JsonSchemaValidationError,
-    UnsupportedJsonSchemaVersion,
+    JsonSchemaValidationFailed,
   };
 
   const boost::system::error_category& GetErrorCategory() noexcept;

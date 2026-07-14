@@ -19,7 +19,7 @@ namespace proxypp::helper::json
       }
     catch(jsonlib::conv_error& e)
       {
-        return Unexpected(Error { Errc::JsonConvertionError });
+        return Unexpected(Error { Errc::JsonConversionFailed });
       }
     catch(const std::exception& e)
       {

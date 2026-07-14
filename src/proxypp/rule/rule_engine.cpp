@@ -31,11 +31,9 @@ namespace proxypp::rule
     auto runtime = script::qjs::Runtime::Create();
     if(!runtime)
       {
-        Error error;
-        error.code = Errc::RuntimeCreationFailed;
-        error.message = std::format("create qjs runtime failed: {}",
-                                    runtime.error().message);
-        return Unexpected(error);
+        return Unexpected(Error(Errc::RuleEngineInitializationFailed,
+                                std::format("create qjs runtime failed: {}",
+                                            runtime.error().message)));
       }
     auto impl = std::make_unique<Impl>(std::move(*runtime));
     return RuleEngine { std::move(impl) };
@@ -46,11 +44,9 @@ namespace proxypp::rule
     auto context = script::qjs::Context::Create(impl_->runtime_);
     if(!context)
       {
-        Error error;
-        error.code = Errc::ContextCreationFailed;
-        error.message = std::format("create match context failed: {}",
-                                    context.error().message);
-        return Unexpected(error);
+        return Unexpected(Error(Errc::RuleEngineInitializationFailed,
+                                std::format("create match context failed: {}",
+                                            context.error().message)));
       }
     return MatchContext::Create(std::move(*context));
   }
@@ -80,7 +76,5 @@ namespace proxypp::rule
       }
     return result->ToBool();
   }
-
-  
 
 }

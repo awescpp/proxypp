@@ -65,27 +65,35 @@ namespace proxypp::rule::http::test
     auto adapter = CreateAdapter(request);
 
     const http::Config http_config {
-      .rules = std::vector<http::Rule> {
-        Rule {.name = "add a test header",
-              .enabled = true,
-              .phase = Phase::Request,
-              .match = std::nullopt,
-              .actions = std::vector<http::Action> {Action {
-                .op = Op::Add,
-                .target = Target::Header,
-                .data
-                = http::data::HeaderNameValueData {.name = kTestHeaderName,
-                                                   .value = kTestHeaderValue}}}},
-        Rule {.name = "set user-agent",
-              .enabled = true,
-              .phase = Phase::Request,
-              .match = std::nullopt,
-              .actions = std::vector<http::Action> {
-                Action {.op = Op::Set,
-                        .target = Target::Header,
-                        .data = http::data::HeaderNameValueData {
-                          .name = kUserAgentHeaderName,
-                          .value = kUserAgentHeaderValue}}}}}};
+      .rules
+      = std::vector<http::Rule> { Rule {
+                                    .name = "add a test header",
+                                    .enabled = true,
+                                    .phase = Phase::Request,
+                                    .match = std::nullopt,
+                                    .actions
+                                    = std::vector<http::Action> { Action {
+                                      .op = Op::Add,
+                                      .target = Target::Header,
+                                      .data
+                                      = http::data::HeaderNameValueData { .name
+                                                                          = kTestHeaderName,
+                                                                          .value = kTestHeaderValue } } } },
+                                  Rule { .name = "set user-agent",
+                                         .enabled = true,
+                                         .phase = Phase::Request,
+                                         .match = std::nullopt,
+                                         .actions = std::
+                                           vector<
+                                             http::Action> { Action { .op
+                                                                      = Op::Set,
+                                                                      .target
+                                                                      = Target::Header,
+                                                                      .data
+                                                                      = http::data::HeaderNameValueData { .name
+                                                                                                          = kUserAgentHeaderName,
+                                                                                                          .value = kUserAgentHeaderValue } } } } }
+    };
 
     const auto result = ApplyRequest(engine, http_config, *adapter);
     BOOST_REQUIRE(result.has_value());
@@ -105,18 +113,19 @@ namespace proxypp::rule::http::test
 
     auto adapter = CreateAdapter(request);
 
-    const http::Config http_config {
-      .rules = std::vector<http::Rule> {
-        Rule {.name = "remove user-agent",
-              .enabled = false,
-              .phase = Phase::Request,
-              .match = std::nullopt,
-              .actions = std::vector<http::Action> {Action {
-                .op = Op::Remove,
-                .target = Target::Header,
-                .data
-                = http::data::HeaderNameData {.name = kUserAgentHeaderName}}}},
-      }};
+    const http::Config
+      http_config { .rules = std::vector<http::Rule> {
+                      Rule { .name = "remove user-agent",
+                             .enabled = false,
+                             .phase = Phase::Request,
+                             .match = std::nullopt,
+                             .actions = std::vector<http::Action> { Action {
+                               .op = Op::Remove,
+                               .target = Target::Header,
+                               .data
+                               = http::data::HeaderNameData { .name
+                                                              = kUserAgentHeaderName } } } },
+                    } };
 
     const auto result = ApplyRequest(engine, http_config, *adapter);
     BOOST_REQUIRE(result.has_value());
@@ -134,18 +143,19 @@ namespace proxypp::rule::http::test
 
     auto adapter = CreateAdapter(request);
 
-    const http::Config http_config {
-      .rules = std::vector<http::Rule> {
-        Rule {.name = "remove user-agent",
-              .enabled = true,
-              .phase = Phase::Response,
-              .match = std::nullopt,
-              .actions = std::vector<http::Action> {Action {
-                .op = Op::Remove,
-                .target = Target::Header,
-                .data
-                = http::data::HeaderNameData {.name = kUserAgentHeaderName}}}},
-      }};
+    const http::Config
+      http_config { .rules = std::vector<http::Rule> {
+                      Rule { .name = "remove user-agent",
+                             .enabled = true,
+                             .phase = Phase::Response,
+                             .match = std::nullopt,
+                             .actions = std::vector<http::Action> { Action {
+                               .op = Op::Remove,
+                               .target = Target::Header,
+                               .data
+                               = http::data::HeaderNameData { .name
+                                                              = kUserAgentHeaderName } } } },
+                    } };
 
     const auto result = ApplyRequest(engine, http_config, *adapter);
     BOOST_REQUIRE(result.has_value());
@@ -160,7 +170,7 @@ namespace proxypp::rule::http::test
     http_::request<http_::empty_body> request;
     auto adapter = CreateAdapter(request);
 
-    const http::Config http_config {.rules = std::vector<http::Rule> {}};
+    const http::Config http_config { .rules = std::vector<http::Rule> {} };
 
     const auto result = ApplyRequest(engine, http_config, *adapter);
     BOOST_TEST(result.has_value());
@@ -175,16 +185,18 @@ namespace proxypp::rule::http::test
     auto adapter = CreateAdapter(request);
 
     const http::Config http_config {
-      .rules = std::vector<http::Rule> {Rule {
+      .rules = std::vector<http::Rule> { Rule {
         .name = "set content-length",
         .enabled = true,
         .phase = Phase::Request,
         .match = std::nullopt,
-        .actions = std::vector<http::Action> {Action {
+        .actions = std::vector<http::Action> { Action {
           .op = Op::Set,
           .target = Target::Header,
-          .data = http::data::HeaderNameValueData {.name = "Content-Length",
-                                                   .value = "100"}}}}}};
+          // Content-Length is a unsupported header
+          .data = http::data::HeaderNameValueData { .name = "Content-Length",
+                                                    .value = "100" } } } } }
+    };
 
     const auto result = ApplyRequest(engine, http_config, *adapter);
     BOOST_REQUIRE(!result.has_value());
@@ -208,8 +220,8 @@ namespace proxypp::rule::http::test
 
     const rule::http::Config http_config {};
 
-    const auto result
-      = ApplyResponse(engine, http_config, *request_adapter, *response_adapter);
+    const auto result = ApplyResponse(engine, http_config, *request_adapter,
+                                      *response_adapter);
     BOOST_TEST(result.has_value());
   }
 
@@ -227,18 +239,19 @@ namespace proxypp::rule::http::test
     BOOST_REQUIRE(response.count(kTestHeaderName) == 1);
 
     const http::Config http_config {
-      .rules = std::vector<http::Rule> {Rule {
+      .rules = std::vector<http::Rule> { Rule {
         .name = "remove test header",
         .enabled = true,
         .phase = Phase::Response,
         .match = std::nullopt,
-        .actions = std::vector<http::Action> {Action {
+        .actions = std::vector<http::Action> { Action {
           .op = Op::Remove,
           .target = Target::Header,
-          .data = http::data::HeaderNameData {.name = kTestHeaderName}}}}}};
+          .data = http::data::HeaderNameData { .name = kTestHeaderName } } } } }
+    };
 
-    const auto result
-      = ApplyResponse(engine, http_config, *request_adapter, *response_adapter);
+    const auto result = ApplyResponse(engine, http_config, *request_adapter,
+                                      *response_adapter);
     BOOST_REQUIRE(result.has_value());
     BOOST_TEST(response.count(kTestHeaderName) == 0);
   }
@@ -256,18 +269,19 @@ namespace proxypp::rule::http::test
     BOOST_REQUIRE(response.count(kTestHeaderName) == 1);
 
     const http::Config http_config {
-      .rules = std::vector<http::Rule> {Rule {
+      .rules = std::vector<http::Rule> { Rule {
         .name = "remove test header",
         .enabled = false,
         .phase = Phase::Response,
         .match = std::nullopt,
-        .actions = std::vector<http::Action> {Action {
+        .actions = std::vector<http::Action> { Action {
           .op = Op::Remove,
           .target = Target::Header,
-          .data = http::data::HeaderNameData {.name = kTestHeaderName}}}}}};
+          .data = http::data::HeaderNameData { .name = kTestHeaderName } } } } }
+    };
 
-    const auto result
-      = ApplyResponse(engine, http_config, *request_adapter, *response_adapter);
+    const auto result = ApplyResponse(engine, http_config, *request_adapter,
+                                      *response_adapter);
     BOOST_REQUIRE(result.has_value());
     BOOST_TEST(response.count(kTestHeaderName) == 1);
     BOOST_TEST(response[kTestHeaderName] == kTestHeaderValue);
@@ -286,18 +300,19 @@ namespace proxypp::rule::http::test
     BOOST_REQUIRE(response.count(kTestHeaderName) == 1);
 
     const http::Config http_config {
-      .rules = std::vector<http::Rule> {Rule {
+      .rules = std::vector<http::Rule> { Rule {
         .name = "remove test header",
         .enabled = true,
         .phase = Phase::Request,
         .match = std::nullopt,
-        .actions = std::vector<http::Action> {Action {
+        .actions = std::vector<http::Action> { Action {
           .op = Op::Remove,
           .target = Target::Header,
-          .data = http::data::HeaderNameData {.name = kTestHeaderName}}}}}};
+          .data = http::data::HeaderNameData { .name = kTestHeaderName } } } } }
+    };
 
-    const auto result
-      = ApplyResponse(engine, http_config, *request_adapter, *response_adapter);
+    const auto result = ApplyResponse(engine, http_config, *request_adapter,
+                                      *response_adapter);
     BOOST_REQUIRE(result.has_value());
     BOOST_TEST(response.count(kTestHeaderName) == 1);
     BOOST_TEST(response[kTestHeaderName] == kTestHeaderValue);
