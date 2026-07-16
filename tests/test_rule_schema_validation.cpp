@@ -77,7 +77,7 @@ namespace proxypp::rule
         = helper::schema::ValidateJsonBySchema(schema_text, document);
       if(!result.has_value())
         {
-          BOOST_TEST_FAIL(result.error().message);
+          BOOST_TEST_FAIL(result.error().message());
         }
       BOOST_REQUIRE(result.has_value());
     }
@@ -109,7 +109,7 @@ namespace proxypp::rule
       const auto result
         = helper::schema::ValidateJsonBySchema(schema_text, document);
       BOOST_REQUIRE(result.has_value() == false);
-      BOOST_TEST(result.error().code == Errc::JsonSchemaValidationError);
+      BOOST_TEST(result.error().code() == Errc::JsonSchemaValidationFailed);
     }
 
     BOOST_AUTO_TEST_CASE(unknown_top_level_property_should_fail)
@@ -121,7 +121,7 @@ namespace proxypp::rule
       const auto result
         = helper::schema::ValidateJsonBySchema(schema_text, document);
       BOOST_REQUIRE(result.has_value() == false);
-      BOOST_TEST(result.error().code == Errc::JsonSchemaValidationError);
+      BOOST_TEST(result.error().code() == Errc::JsonSchemaValidationFailed);
     }
 
     BOOST_AUTO_TEST_SUITE_END()

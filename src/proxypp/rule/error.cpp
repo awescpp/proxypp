@@ -18,33 +18,18 @@ namespace proxypp::rule
       switch(static_cast<Errc>(ev))
         {
         case Errc::Ok: return "success";
-        case Errc::InvalidRuleSet: return "invalid rule set";
         case Errc::InvalidRule: return "invalid rule";
-        case Errc::UnsupportedHttpPhase: return "unsupported HTTP phase";
-        case Errc::RuntimeCreationFailed:
-          return "script runtime creation failed";
         case Errc::RuleEngineInitializationFailed:
           return "rule engine initialization failed";
-        case Errc::ContextCreationFailed:
-          return "script context creation failed";
-        case Errc::ContextInjectionFailed:
-          return "rule context injection failed";
+        case Errc::RuleContextPreparationFailed:
+          return "rule context preparation failed";
         case Errc::InvalidMatchExpression: return "invalid match expression";
         case Errc::MatchEvaluationFailed:
           return "match expression evaluation failed";
         case Errc::MatchResultNotBoolean:
           return "match expression result is not boolean";
         case Errc::InvalidAction: return "invalid rule action";
-        case Errc::UnsupportedAction: return "unsupported rule action";
-        case Errc::ActionExecutionFailed:
-          return "rule action execution failed";
-        case Errc::InvalidRuleSchemaJson: return "invalid rule schema JSON";
-        case Errc::InvalidRuleFileJson: return "invalid rule file JSON";
-        case Errc::InvalidRuleSchema: return "invalid rule schema";
-        case Errc::RuleFileSchemaValidationFailed:
-          return "rule file schema validation failed";
-        case Errc::UnsupportedJsonSchemaVersion:
-          return "unsupported rule schema version";
+        case Errc::ActionExecutionFailed: return "action execution failed";
         }
       return "unknown rule error";
     }

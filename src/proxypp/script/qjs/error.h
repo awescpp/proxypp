@@ -15,21 +15,21 @@ namespace proxypp::script::qjs
     CreateRuntimeFailed,
     CreateContextFailed,
 
-    EvalFailed,
-    JsException,
+    InvalidRuntime,
+    InvalidContext,
+    InvalidValue,
+    ContextMismatch,
 
-    ToBoolFailed,
-    ToStringFailed,
-    ToIntFailed,
+    ConvertValueFailed,
+    ExecuteScriptFailed,
 
     GetPropertyFailed,
     SetPropertyFailed,
 
-    SetElementFailed,
     GetElementFailed,
+    SetElementFailed,
 
-    InvalidArgument,
-    InternalError
+    JsInternalError
   };
 
   const boost::system::error_category& GetQjsErrorCategory() noexcept;

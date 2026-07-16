@@ -87,7 +87,7 @@ namespace proxypp::rule::http::test
     auto TestMessage = [&](auto& message) {
       auto result = PerformActionOnMessage(action, message);
       BOOST_REQUIRE(!result.has_value());
-      BOOST_TEST(result.error().code == Errc::InvalidAction);
+      BOOST_TEST(result.error().code() == Errc::InvalidAction);
     };
 
     http_::request<http_::empty_body> request;
@@ -97,7 +97,7 @@ namespace proxypp::rule::http::test
     TestMessage(response);
   }
 
-  BOOST_AUTO_TEST_CASE(invalid_op_should_return_unsupported_action_error)
+  BOOST_AUTO_TEST_CASE(invalid_op_should_return_invalid_action)
   {
     Action action { .op = Op::NotSet,
                     .target = Target::Header,
@@ -107,7 +107,7 @@ namespace proxypp::rule::http::test
     auto TestMessage = [&](auto& message) {
       auto result = PerformActionOnMessage(action, message);
       BOOST_REQUIRE(!result.has_value());
-      BOOST_TEST(result.error().code == Errc::UnsupportedAction);
+      BOOST_TEST(result.error().code() == Errc::InvalidAction);
     };
 
     http_::request<http_::empty_body> request;
@@ -117,7 +117,7 @@ namespace proxypp::rule::http::test
     TestMessage(response);
   }
 
-  BOOST_AUTO_TEST_CASE(invalid_target_should_return_unsupported_action_error)
+  BOOST_AUTO_TEST_CASE(invalid_target_should_return_invalid_action)
   {
     Action action { .op = Op::Remove,
                     .target = Target::NotSet,
@@ -126,7 +126,7 @@ namespace proxypp::rule::http::test
     auto TestMessage = [&](auto& message) {
       auto result = PerformActionOnMessage(action, message);
       BOOST_REQUIRE(!result.has_value());
-      BOOST_TEST(result.error().code == Errc::UnsupportedAction);
+      BOOST_TEST(result.error().code() == Errc::InvalidAction);
     };
 
     http_::request<http_::empty_body> request;
@@ -147,7 +147,7 @@ namespace proxypp::rule::http::test
     auto TestMessage = [&](auto& message) {
       auto result = PerformActionOnMessage(action, message);
       BOOST_REQUIRE(!result);
-      BOOST_TEST(result.error().code == Errc::InvalidAction);
+      BOOST_TEST(result.error().code() == Errc::InvalidAction);
     };
 
     http_::request<http_::empty_body> request;
@@ -167,7 +167,7 @@ namespace proxypp::rule::http::test
     auto TestMessage = [&](auto& message) {
       auto result = PerformActionOnMessage(action, message);
       BOOST_REQUIRE(!result);
-      BOOST_TEST(result.error().code == Errc::InvalidAction);
+      BOOST_TEST(result.error().code() == Errc::InvalidAction);
     };
 
     http_::request<http_::empty_body> request;

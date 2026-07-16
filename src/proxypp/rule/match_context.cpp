@@ -46,7 +46,7 @@ namespace proxypp::rule
     if(!object.IsValid() || !object.IsObject())
       {
         return Unexpected(
-          Error(Errc::ContextInjectionFailed, "value is not an object"));
+          Error(Errc::RuleContextPreparationFailed, "value is not an object"));
       }
     return AddGlobalValue(name, std::move(object));
   }
@@ -58,14 +58,14 @@ namespace proxypp::rule
     if(!global.has_value())
       {
         return Unexpected(
-          Error(Errc::ContextInjectionFailed, global.error().message));
+          Error(Errc::RuleContextPreparationFailed, global.error().message()));
       }
 
     if(auto result = global->SetProperty(name, std::move(value));
        !result.has_value())
       {
         return Unexpected(
-          Error(Errc::ContextInjectionFailed, result.error().message));
+          Error(Errc::RuleContextPreparationFailed, result.error().message()));
       }
 
     return {};

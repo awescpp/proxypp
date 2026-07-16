@@ -69,7 +69,7 @@ namespace proxypp::helper::json::test
     )JSON";
     auto parse_result = ParseJson(content);
     BOOST_REQUIRE(!parse_result.has_value());
-    BOOST_TEST(parse_result.error().message.size() > 0);
-    BOOST_TEST_MESSAGE(parse_result.error().message);
+    BOOST_TEST(parse_result.error().message().size() > 0);
+    BOOST_TEST_MESSAGE(parse_result.error().message());
   }
 }

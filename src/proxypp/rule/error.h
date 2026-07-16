@@ -14,29 +14,17 @@ namespace proxypp::rule
   {
     Ok = 0,
 
-    InvalidRuleSet,
     InvalidRule,
-    UnsupportedHttpPhase,
 
-    RuntimeCreationFailed,
     RuleEngineInitializationFailed,
-
-    ContextCreationFailed,
-    ContextInjectionFailed,
+    RuleContextPreparationFailed,
 
     InvalidMatchExpression,
     MatchEvaluationFailed,
     MatchResultNotBoolean,
 
     InvalidAction,
-    UnsupportedAction,
     ActionExecutionFailed,
-
-    InvalidRuleSchemaJson,
-    InvalidRuleFileJson,
-    InvalidRuleSchema,
-    UnsupportedJsonSchemaVersion,
-    RuleFileSchemaValidationFailed,
   };
 
   const boost::system::error_category& GetRuleErrorCategory() noexcept;

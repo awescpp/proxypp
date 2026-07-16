@@ -28,34 +28,32 @@ namespace proxypp::helper::schema
     {
       if(!schema.is_object())
         {
-          Error error { Errc::InvalidJsonSchema,
-                        "rule schema root must be a JSON object" };
-          return Unexpected(error);
+          return Unexpected(Error { Errc::InvalidJsonSchema,
+                                    "rule schema must be a JSON object" });
         }
 
       const auto it = schema.find("$schema");
       if(it == schema.object_range().end())
         {
-          Error error { Errc::UnsupportedJsonSchemaVersion,
-                        std::format("rule schema must declare $schema: {}",
-                                    kJsonSchemaDraft202012) };
-          return Unexpected(error);
+          return Unexpected(
+            Error { Errc::InvalidJsonSchema,
+                    std::format("rule schema must declare $schema: {}",
+                                kJsonSchemaDraft202012) });
         }
       if(!(it->value().is_string()))
         {
-          Error error { Errc::UnsupportedJsonSchemaVersion,
-                        "rule schema '$schema' must be a string" };
-          return Unexpected(error);
+          return Unexpected(
+            Error { Errc::InvalidJsonSchema,
+                    "rule schema '$schema' must be a string" });
         }
 
       const auto value = it->value().as_string_view();
       if(!IsSupportedJsonSchemaVersion(value))
         {
-          Error error { Errc::UnsupportedJsonSchemaVersion,
-                        std::format(
-                          "unsupported rule schema version: {}, expected: {}",
-                          value, kJsonSchemaDraft202012) };
-          return Unexpected(error);
+          return Unexpected(Error {
+            Errc::InvalidJsonSchema,
+            std::format("unsupported rule schema version: {}, expected: {}",
+                        value, kJsonSchemaDraft202012) });
         }
 
       return {};
@@ -75,9 +73,9 @@ namespace proxypp::helper::schema
       }
     catch(const jsoncons::ser_error& e)
       {
-        Error error { Errc::InvalidJsonSchema,
-                      std::format("invalid rule schema JSON: {}", e.what()) };
-        return Unexpected(error);
+        return Unexpected(
+          Error { Errc::JsonParseFailed,
+                  std::format("parse rule schema failed, {}", e.what()) });
       }
 
     if(auto result = CheckJsonSchemaVersion(schema); !result.has_value())
@@ -93,9 +91,9 @@ namespace proxypp::helper::schema
       }
     catch(const jsoncons::ser_error& e)
       {
-        Error error { Errc::JsonParseFailed,
-                      std::format("invalid rule file JSON: {}", e.what()) };
-        return Unexpected(error);
+        return Unexpected(
+          Error { Errc::JsonParseFailed,
+                  std::format("invalid rule file JSON: {}", e.what()) });
       }
 
     try
@@ -106,18 +104,30 @@ namespace proxypp::helper::schema
           = jsonschema::make_json_schema(std::move(schema), options);
         compiled.validate(document);
       }
+    catch(const jsonschema::schema_error& e)
+      {
+        return Unexpected(
+          Error { Errc::InvalidJsonSchema,
+                  std::format("invalid JSON schema: {}", e.what()) });
+      }
+    catch(const jsoncons::conv_error& e)
+      {
+        // schema 序列化失败时会报这个异常
+        return Unexpected(
+          Error { Errc::InvalidJsonSchema,
+                  std::format("invalid JSON schema: {}", e.what()) });
+      }
     catch(const jsonschema::validation_error& e)
       {
-        Error error { Errc::JsonSchemaValidationError,
-                      std::format("rule file schema validation failed: {}",
-                                  e.what()) };
-        return Unexpected(error);
+        return Unexpected(
+          Error { Errc::JsonSchemaValidationFailed,
+                  std::format("schema validation failed: {}", e.what()) });
       }
     catch(const std::exception& e)
       {
-        Error error { Errc::InvalidJsonSchema,
-                      std::format("invalid rule schema: {}", e.what()) };
-        return Unexpected(error);
+        return Unexpected(
+          Error { Errc::InternalError,
+                  std::format("schema validation failed, {}", e.what()) });
       }
 
     return {};

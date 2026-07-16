@@ -18,7 +18,7 @@ proxypp::script::qjs::Evaluator::Eval(Context& context, std::string_view expr,
   JSContext* qjs_ctx = context.NativeHandle();
   if(qjs_ctx == nullptr)
     {
-      return Unexpected(Error { Errc::InvalidArgument });
+      return Unexpected(Error { Errc::InvalidContext });
     }
 
   const std::string file_name_str { file_name };
@@ -30,7 +30,7 @@ proxypp::script::qjs::Evaluator::Eval(Context& context, std::string_view expr,
       const std::string message = detail::GetExceptionMessage(*qjs_ctx);
       JS_FreeValue(qjs_ctx, result);
       return Unexpected(
-        Error { Errc::EvalFailed,
+        Error { Errc::ExecuteScriptFailed,
                 std::format("{}, from {}", message, file_name_str) });
     }
 

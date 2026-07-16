@@ -23,23 +23,19 @@ namespace proxypp::script::qjs
           return "failed to create QuickJS runtime";
         case Errc::CreateContextFailed:
           return "failed to create QuickJS context";
-        case Errc::EvalFailed:
-          return "failed to evaluate JavaScript expression";
-        case Errc::JsException: return "JavaScript exception";
-        case Errc::ToBoolFailed:
-          return "failed to convert JavaScript value to bool";
-        case Errc::ToStringFailed:
-          return "failed to convert JavaScript value to string";
-        case Errc::ToIntFailed:
-          return "failed to convert JavaScript value to int";
+        case Errc::InvalidRuntime: return "invalid runtime";
+        case Errc::InvalidContext: return "invalid context";
+        case Errc::InvalidValue: return "invalid value";
+        case Errc::ContextMismatch: return "context mismatch";
+        case Errc::ConvertValueFailed: return "convert value failed";
+        case Errc::ExecuteScriptFailed: return "execute script failed";
         case Errc::GetPropertyFailed:
           return "failed to get JavaScript property";
         case Errc::SetPropertyFailed:
           return "failed to set JavaScript property";
-        case Errc::InvalidArgument: return "invalid argument";
-        case Errc::InternalError: return "internal QuickJS wrapper error";
-        case Errc::SetElementFailed: return "set element to array failed";
         case Errc::GetElementFailed: return "get element from array failed";
+        case Errc::SetElementFailed: return "set element to array failed";
+        case Errc::JsInternalError: return "javascript runtime internal error";
         }
       return "unknown QuickJS error";
     }
