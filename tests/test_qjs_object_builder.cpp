@@ -305,7 +305,7 @@ namespace proxypp::script::qjs::test
 
     auto builder = ObjectBuilder::Create(context);
     BOOST_REQUIRE(!builder.has_value());
-    RequireErrorCode(builder, Errc::InternalError);
+    RequireErrorCode(builder, Errc::InvalidContext);
   }
 
   BOOST_AUTO_TEST_SUITE_END()

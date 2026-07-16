@@ -106,7 +106,7 @@ namespace proxypp::script::qjs::test
     BOOST_TEST(!value->IsValid());
     auto result = value->ToString();
     BOOST_REQUIRE(!result.has_value());
-    BOOST_TEST(result.error().code() == Errc::InvalidArgument);
+    BOOST_TEST(result.error().code() == Errc::InvalidValue);
   }
 
   BOOST_AUTO_TEST_CASE(
@@ -657,7 +657,7 @@ namespace proxypp::script::qjs::test
   }
 
   BOOST_AUTO_TEST_CASE(
-    set_property_with_value_from_different_context_should_return_invalid_argument)
+    set_property_with_value_from_different_context_should_return_context_mismatch)
   {
     QjsContextFixture lhs_fixture;
     QjsContextFixture rhs_fixture;
@@ -673,7 +673,7 @@ namespace proxypp::script::qjs::test
     BOOST_REQUIRE(value->IsString());
 
     auto set_result = target->SetProperty("message", std::move(*value));
-    RequireErrorCode(set_result, Errc::InvalidArgument);
+    RequireErrorCode(set_result, Errc::ContextMismatch);
 
     // SetProperty consumes the input Value regardless of success or failure.
     BOOST_TEST(!value->IsValid());
@@ -691,42 +691,42 @@ namespace proxypp::script::qjs::test
   {
     qjs::Context moved = qjs::Context { std::move(context) };
     auto value = qjs::Value::Undefined(context);
-    RequireErrorCode(value, Errc::InvalidArgument);
+    RequireErrorCode(value, Errc::InvalidContext);
   }
 
   BOOST_AUTO_TEST_CASE(create_null_with_invalid_context_should_fail)
   {
     qjs::Context moved = qjs::Context { std::move(context) };
     auto value = qjs::Value::Null(context);
-    RequireErrorCode(value, Errc::InvalidArgument);
+    RequireErrorCode(value, Errc::InvalidContext);
   }
 
   BOOST_AUTO_TEST_CASE(create_bool_with_invalid_context_should_fail)
   {
     qjs::Context moved = qjs::Context { std::move(context) };
     auto value = qjs::Value::Bool(context, true);
-    RequireErrorCode(value, Errc::InvalidArgument);
+    RequireErrorCode(value, Errc::InvalidContext);
   }
 
   BOOST_AUTO_TEST_CASE(create_int32_with_invalid_context_should_fail)
   {
     qjs::Context moved = qjs::Context { std::move(context) };
     auto value = qjs::Value::Int32(context, 42);
-    RequireErrorCode(value, Errc::InvalidArgument);
+    RequireErrorCode(value, Errc::InvalidContext);
   }
 
   BOOST_AUTO_TEST_CASE(create_string_with_invalid_context_should_fail)
   {
     qjs::Context moved = qjs::Context { std::move(context) };
     auto value = qjs::Value::String(context, "test");
-    RequireErrorCode(value, Errc::InvalidArgument);
+    RequireErrorCode(value, Errc::InvalidContext);
   }
 
   BOOST_AUTO_TEST_CASE(create_object_with_invalid_context_should_fail)
   {
     qjs::Context moved = qjs::Context { std::move(context) };
     auto value = qjs::Value::Object(context);
-    RequireErrorCode(value, Errc::InvalidArgument);
+    RequireErrorCode(value, Errc::InvalidContext);
   }
 
   BOOST_AUTO_TEST_SUITE_END()
@@ -741,7 +741,7 @@ namespace proxypp::script::qjs::test
 
     auto moved = std::move(*value);
 
-    RequireErrorCode(value->ToBool(), Errc::InvalidArgument);
+    RequireErrorCode(value->ToBool(), Errc::InvalidValue);
   }
 
   BOOST_AUTO_TEST_CASE(moved_from_value_to_int32_should_fail)
@@ -752,7 +752,7 @@ namespace proxypp::script::qjs::test
 
     auto moved = std::move(*value);
 
-    RequireErrorCode(value->ToInt32(), Errc::InvalidArgument);
+    RequireErrorCode(value->ToInt32(), Errc::InvalidValue);
   }
 
   BOOST_AUTO_TEST_CASE(moved_from_value_to_string_should_fail)
@@ -763,7 +763,7 @@ namespace proxypp::script::qjs::test
 
     auto moved = std::move(*value);
 
-    RequireErrorCode(value->ToString(), Errc::InvalidArgument);
+    RequireErrorCode(value->ToString(), Errc::InvalidValue);
   }
 
   BOOST_AUTO_TEST_CASE(moved_from_value_get_property_should_fail)
@@ -775,7 +775,7 @@ namespace proxypp::script::qjs::test
 
     auto moved = std::move(*value);
 
-    RequireErrorCode(value->GetProperty("length"), Errc::InvalidArgument);
+    RequireErrorCode(value->GetProperty("length"), Errc::InvalidValue);
   }
 
   BOOST_AUTO_TEST_CASE(set_property_with_moved_from_target_should_fail)
@@ -792,7 +792,7 @@ namespace proxypp::script::qjs::test
     auto moved = std::move(*target);
 
     auto set_result = target->SetProperty("name", std::move(*value));
-    RequireErrorCode(set_result, Errc::InvalidArgument);
+    RequireErrorCode(set_result, Errc::InvalidValue);
   }
 
   BOOST_AUTO_TEST_CASE(set_property_with_moved_from_value_should_fail)
@@ -809,7 +809,7 @@ namespace proxypp::script::qjs::test
     auto moved = std::move(*value);
 
     auto set_result = target->SetProperty("message", std::move(*value));
-    RequireErrorCode(set_result, Errc::InvalidArgument);
+    RequireErrorCode(set_result, Errc::InvalidValue);
   }
 
   BOOST_AUTO_TEST_CASE(
@@ -825,7 +825,7 @@ namespace proxypp::script::qjs::test
 
     auto moved = std::move(*value);
     auto set_result = target->SetProperty("message", std::move(*value));
-    RequireErrorCode(set_result, Errc::InvalidArgument);
+    RequireErrorCode(set_result, Errc::InvalidValue);
 
     // to test that target still valid
     BOOST_TEST(target->IsValid());
@@ -840,7 +840,7 @@ namespace proxypp::script::qjs::test
   BOOST_FIXTURE_TEST_SUITE(exception_path_tests, QjsContextFixture)
 
   BOOST_AUTO_TEST_CASE(
-    to_string_when_js_to_string_throws_should_return_to_string_failed)
+    to_string_when_js_to_string_throws_should_return_convert_value_failed)
   {
     auto value = qjs::Evaluator::Eval(
       context, "({ toString() { throw new Error('toString failed'); } })");
@@ -848,12 +848,12 @@ namespace proxypp::script::qjs::test
     BOOST_REQUIRE(value->IsValid());
 
     auto result = value->ToString();
-    RequireErrorCode(result, Errc::ToStringFailed);
+    RequireErrorCode(result, Errc::ConvertValueFailed);
     RequireErrorMessageContains(result, "toString failed");
   }
 
   BOOST_AUTO_TEST_CASE(
-    to_int32_when_js_value_of_throws_should_return_to_int32_failed)
+    to_int32_when_js_value_of_throws_should_return_convert_value_failed)
   {
     auto value = qjs::Evaluator::Eval(
       context, "({ valueOf() { throw new Error('valueOf failed'); } })");
@@ -861,7 +861,7 @@ namespace proxypp::script::qjs::test
     BOOST_REQUIRE(value->IsValid());
 
     auto result = value->ToInt32();
-    RequireErrorCode(result, Errc::ToIntFailed);
+    RequireErrorCode(result, Errc::ConvertValueFailed);
     RequireErrorMessageContains(result, "valueOf failed");
   }
 
@@ -1052,7 +1052,7 @@ namespace proxypp::script::qjs::test
     qjs::Context moved_context = qjs::Context { std::move(context) };
     boost::ignore_unused(moved_context);
     auto array = qjs::Value::Array(context);
-    RequireErrorCode(array, Errc::InvalidArgument);
+    RequireErrorCode(array, Errc::InvalidContext);
   }
 
   BOOST_AUTO_TEST_CASE(moved_from_value_get_element_should_fail)
@@ -1065,7 +1065,7 @@ namespace proxypp::script::qjs::test
     auto moved = std::move(*array);
     boost::ignore_unused(moved);
 
-    RequireErrorCode(array->GetElement(0), Errc::InvalidArgument);
+    RequireErrorCode(array->GetElement(0), Errc::InvalidValue);
   }
 
   BOOST_AUTO_TEST_CASE(moved_from_value_array_length_should_fail)
@@ -1078,7 +1078,7 @@ namespace proxypp::script::qjs::test
     auto moved = std::move(*array);
     boost::ignore_unused(moved);
 
-    RequireErrorCode(array->ArrayLength(), Errc::InvalidArgument);
+    RequireErrorCode(array->ArrayLength(), Errc::InvalidValue);
   }
 
   BOOST_AUTO_TEST_CASE(set_element_with_moved_from_value_should_fail)
@@ -1097,7 +1097,7 @@ namespace proxypp::script::qjs::test
     BOOST_REQUIRE(value->IsNumber());
 
     RequireErrorCode(array->SetElement(0, std::move(*value)),
-                     Errc::InvalidArgument);
+                     Errc::InvalidValue);
     BOOST_TEST(!value->IsValid());
   }
 

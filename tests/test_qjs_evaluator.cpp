@@ -112,7 +112,7 @@ namespace proxypp::script::qjs::test
   BOOST_AUTO_TEST_CASE(eval_syntax_error_should_return_eval_failed_with_message)
   {
     auto value = qjs::Evaluator::Eval(context, "const =");
-    RequireErrorCode(value, Errc::EvalFailed);
+    RequireErrorCode(value, Errc::ExecuteScriptFailed);
     RequireErrorMessageContains(value, "SyntaxError");
   }
 
@@ -120,21 +120,21 @@ namespace proxypp::script::qjs::test
     eval_reference_error_should_return_eval_failed_with_message)
   {
     auto value = qjs::Evaluator::Eval(context, "not_existed + 1");
-    RequireErrorCode(value, Errc::EvalFailed);
+    RequireErrorCode(value, Errc::ExecuteScriptFailed);
     RequireErrorMessageContains(value, "ReferenceError");
   }
 
   BOOST_AUTO_TEST_CASE(eval_type_error_should_return_eval_failed_with_message)
   {
     auto value = qjs::Evaluator::Eval(context, "null.foo");
-    RequireErrorCode(value, Errc::EvalFailed);
+    RequireErrorCode(value, Errc::ExecuteScriptFailed);
     RequireErrorMessageContains(value, "TypeError");
   }
 
   BOOST_AUTO_TEST_CASE(eval_throw_error_should_return_eval_failed_with_message)
   {
     auto value = qjs::Evaluator::Eval(context, "throw new Error('boom');");
-    RequireErrorCode(value, Errc::EvalFailed);
+    RequireErrorCode(value, Errc::ExecuteScriptFailed);
     RequireErrorMessageContains(value, "boom");
   }
 
@@ -142,7 +142,7 @@ namespace proxypp::script::qjs::test
   {
     auto value = qjs::Evaluator::Eval(
       context, "throw new Error('named failure')", "rules/test-rule.js");
-    RequireErrorCode(value, Errc::EvalFailed);
+    RequireErrorCode(value, Errc::ExecuteScriptFailed);
     RequireErrorMessageContains(value, "named failure");
     RequireErrorMessageContains(value, "rules/test-rule.js");
   }
@@ -157,7 +157,7 @@ namespace proxypp::script::qjs::test
     BOOST_REQUIRE(moved.NativeHandle() != nullptr);
 
     auto value = qjs::Evaluator::Eval(context, "1 + 1");
-    RequireErrorCode(value, Errc::InvalidArgument);
+    RequireErrorCode(value, Errc::InvalidContext);
   }
 
   BOOST_AUTO_TEST_SUITE_END()

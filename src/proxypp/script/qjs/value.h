@@ -30,6 +30,18 @@ namespace proxypp::script::qjs
     Value(const Value& other) = delete;
     Value& operator=(const Value& other) = delete;
 
+    /**
+     * 获取指定 QuickJS 上下文的全局对象。
+     *
+     * @param context 要获取全局对象的脚本上下文。
+     *
+     * @return 成功时返回全局对象；失败时返回错误。
+     *
+     * @retval Errc::InvalidContext
+     *         context 不包含有效的 QuickJS 上下文。
+     * @retval Errc::JsInternalError
+     *         QuickJS 获取全局对象失败。
+     */
     static Result<Value> GlobalObject(Context& context);
     static Result<Value> Undefined(Context& context);
     static Result<Value> Null(Context& context);
