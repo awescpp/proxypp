@@ -68,7 +68,12 @@ void proxypp::core::TcpServer::Run()
             std::move(client_sock), self->rule_engine(),
             self->http_rule_config());
 
-          co_await http_proxy_session->Run();
+          asio::co_spawn(
+            self->acceptor_.get_executor(),
+            [http_proxy_session]() -> asio::awaitable<void> {
+              co_await http_proxy_session->Run();
+            },
+            asio::detached);
         }
     },
     asio::detached);
