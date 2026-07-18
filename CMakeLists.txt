@@ -9,6 +9,30 @@ set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 option(PROXYPP_ENABLE_ASAN "Enable AddressSanitizer" OFF)
 option(PROXYPP_BUILD_APP "Build proxy++ executable" ON)
 
+option(PROXYPP_ENABLE_COVERAGE "Enable LLVM source-based code coverage" OFF)
+
+if (PROXYPP_ENABLE_COVERAGE)
+    if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR NOT CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+        message(FATAL_ERROR "PROXYPP_ENABLE_COVERAGE currently requires clang-cl")
+    endif ()
+
+    add_compile_options(
+            "$<$<COMPILE_LANGUAGE:CXX>:/clang:-fprofile-instr-generate>"
+            "$<$<COMPILE_LANGUAGE:CXX>:/clang:-fcoverage-mapping>")
+
+    execute_process(COMMAND "${CMAKE_CXX_COMPILER}" /clang:-print-resource-dir OUTPUT_VARIABLE CLANG_RESOURCE_DIR OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
+
+    set(CLANG_RUNTIME_DIR "${CLANG_RESOURCE_DIR}\\lib\\windows")
+
+    if (NOT EXISTS "${CLANG_RUNTIME_DIR}")
+        message(FATAL_ERROR "Clang runtime directory not found ${CLANG_RUNTIME_DIR}")
+    endif ()
+
+    message(STATUS "Clang runtime directory: ${CLANG_RUNTIME_DIR}")
+
+    add_link_options("/LIBPATH:${CLANG_RUNTIME_DIR}")
+endif ()
+
 find_package(Boost CONFIG REQUIRED COMPONENTS asio beast date_time url dll)
 find_package(CLI11 CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
