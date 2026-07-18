@@ -8,6 +8,7 @@
 #include "proxypp/log/log.h"
 #include "proxypp/rule/http/apply.h"
 #include <boost/url.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 namespace proxypp::http
 {
@@ -636,6 +637,11 @@ namespace proxypp::http
 
       case ResponseBodyFraming::None: co_return true;
       }
+
+    LOG_HTTP_ERROR("unexpected framing: {}",
+                   magic_enum::enum_name(response_body_info.framing));
+
+    co_return false;
   }
 
   asio::awaitable<bool> HttpProxySession::ForwardResponseBodyByContentLength(
@@ -909,6 +915,8 @@ namespace proxypp::http
             }
           }
       }
+
+    co_return true;
   }
 
   asio::awaitable<bool>
