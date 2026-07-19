@@ -10,7 +10,7 @@ function(proxypp_add_boost_tests target)
     endif ()
 
     add_executable(${target} ${ARG_SOURCES})
-    target_compile_definitions(${target} PRIVATE BOOST_TEST_DYN_LINK ${ARG_SOURCES})
+    target_compile_definitions(${target} PRIVATE BOOST_TEST_DYN_LINK ${ARG_DEFINITIONS})
     target_link_libraries(${target} PRIVATE Boost::unit_test_framework ${ARG_LIBRARIES})
     add_test(NAME ${target} COMMAND ${target})
 
@@ -38,11 +38,11 @@ proxypp_add_boost_tests(test_qjs_api LIBRARIES proxypp::script)
 proxypp_add_boost_tests(test_qjs_runtime LIBRARIES proxypp::script)
 proxypp_add_boost_tests(test_qjs_context LIBRARIES proxypp::script)
 proxypp_add_boost_tests(test_qjs_value
-        SOURCES test_qjs_evaluator.cpp qjs_fixture.cpp
+        SOURCES test_qjs_value.cpp qjs_fixture.cpp
         LIBRARIES proxypp::script
 )
 proxypp_add_boost_tests(test_qjs_evaluator
-        SOURCES test_qjs_value.cpp qjs_fixture.cpp
+        SOURCES test_qjs_evaluator.cpp qjs_fixture.cpp
         LIBRARIES proxypp::script
 )
 proxypp_add_boost_tests(test_qjs_object_builder
