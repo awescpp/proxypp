@@ -12,6 +12,7 @@ on:
       - schemas/**
       - CMakeLists.txt
       - vcpkg.json
+      - vcpkg-configuration.json
       - ".github/workflows/ci.yml"
 
   pull_request:
@@ -25,6 +26,7 @@ on:
       - schemas/**
       - CMakeLists.txt
       - vcpkg.json
+      - vcpkg-configuration.json
       - ".github/workflows/ci.yml"
 
   workflow_dispatch:
@@ -33,11 +35,11 @@ permissions:
   contents: read
 
 jobs:
-  windows-configure:
-    name: Windows / Configure
+  windows-clang-cl:
+    name: Windows / clang-cl
     runs-on: windows-2022
     env:
-      VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}\\.vcpkg-bincache,readwrite"
+      VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}/.vcpkg-bincache,readwrite"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -46,15 +48,25 @@ jobs:
         uses: actions/cache@v6
         with:
           path: .vcpkg-bincache
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'CMakeLists.txt') }}
+          key: vcpkg-${{ runner.os }}-clang-cl-x64-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
           restore-keys: |
-            vcpkg-${{ runner.os }}-
+            vcpkg-${{ runner.os }}-clang-cl-x64-
+
+      - name: Verify clang-cl toolchain
+        shell: pwsh
+        run: |
+          Get-Command clang-cl
+          clang-cl --version
 
       - name: Configure
         shell: pwsh
         run: |
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
-          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake"
+          cmake -S . -B build `
+          -G "Visual Studio 17 2022" `
+          -A x64 `
+          -T ClangCL `
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake" `
+          -DVCPKG_TARGET_TRIPLET=x64-windows
 
       - name: Build Debug
         shell: pwsh
