@@ -73,10 +73,52 @@ void proxypp::core::TcpServer::Run()
             [http_proxy_session]() -> asio::awaitable<void> {
               co_await http_proxy_session->Run();
             },
-            asio::detached);
+            [http_proxy_session](std::exception_ptr e) {
+              if(!e)
+                {
+                  return;
+                }
+              try
+                {
+                  std::rethrow_exception(e);
+                }
+              catch(const boost::system::system_error& ex)
+                {
+                  LOG_HTTP_ERROR("unhandled system error in HttpProxySession, "
+                                 "code={}, message={}",
+                                 ex.code().value(), ex.code().message());
+                }
+              catch(const std::exception& ex)
+                {
+                  LOG_HTTP_ERROR("unhandled exception in HttpProxySession, {}",
+                                 ex.what());
+                }
+              catch(...)
+                {
+                  LOG_HTTP_ERROR("unknown exception in HttpProxySession");
+                }
+            });
         }
     },
-    asio::detached);
+    [](std::exception_ptr e) {
+      if(!e)
+        {
+          return;
+        }
+
+      try
+        {
+          std::rethrow_exception(e);
+        }
+      catch(const std::exception& ex)
+        {
+          LOG_CORE_ERROR("accept coroutine terminated, {}", ex.what());
+        }
+      catch(...)
+        {
+          LOG_CORE_ERROR("accept coroutine terminated by unknown exception");
+        }
+    });
 
   LOG_CORE_INFO("proxy++ running on {}:{}", address(), port());
 }
