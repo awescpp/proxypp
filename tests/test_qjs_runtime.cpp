@@ -78,7 +78,18 @@ namespace proxypp::script::qjs::test
   {
     auto runtime = MakeRuntime();
     auto native_handle = runtime.NativeHandle();
+
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wself-move"
+#endif
+
     runtime = std::move(runtime);
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+
     BOOST_TEST(runtime.NativeHandle() == native_handle);
     BOOST_TEST(runtime.NativeHandle() != nullptr);
   }

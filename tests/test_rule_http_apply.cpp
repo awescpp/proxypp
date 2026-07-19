@@ -20,7 +20,7 @@ namespace proxypp::rule::http::test
 
   constexpr auto kTestHeaderName = "x-proxypp-test";
   constexpr auto kTestHeaderValue = "value";
-  constexpr auto kAnotherTestHeaderValue = "another value";
+  // constexpr auto kAnotherTestHeaderValue = "another value";
 
   constexpr auto kUserAgentHeaderName = "user-agent";
   constexpr auto kUserAgentHeaderValue = "Boost.Beast";

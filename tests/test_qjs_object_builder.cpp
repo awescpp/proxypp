@@ -215,7 +215,7 @@ namespace proxypp::script::qjs::test
 
     auto array = qjs::Value::Array(context);
     Result<void> set_result = {};
-    for(int i = 0; i < vec.size(); ++i)
+    for(std::size_t i = 0; i < vec.size(); ++i)
       {
         auto value = qjs::Value::String(context, vec[i]);
         BOOST_REQUIRE(value.has_value());
@@ -241,7 +241,7 @@ namespace proxypp::script::qjs::test
     auto arr_length = property_arr->ArrayLength();
     BOOST_REQUIRE(arr_length.has_value());
     BOOST_TEST(*arr_length == 3);
-    for(int i = 0; i < vec.size(); ++i)
+    for(std::size_t i = 0; i < vec.size(); ++i)
       {
         auto value = property_arr->GetElement(i);
         BOOST_REQUIRE(value.has_value());

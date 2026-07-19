@@ -10,7 +10,6 @@ option(PROXYPP_ENABLE_ASAN "Enable AddressSanitizer" OFF)
 option(PROXYPP_BUILD_APP "Build proxy++ executable" ON)
 
 option(PROXYPP_ENABLE_COVERAGE "Enable LLVM source-based code coverage" OFF)
-
 if (PROXYPP_ENABLE_COVERAGE)
     if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR NOT CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
         message(FATAL_ERROR "PROXYPP_ENABLE_COVERAGE currently requires clang-cl")
@@ -46,7 +45,13 @@ add_library(proxypp_options INTERFACE)
 add_library(proxypp::options ALIAS proxypp_options)
 target_include_directories(proxypp_options INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_precompile_headers(proxypp_options INTERFACE src/proxypp/pch.h)
-target_compile_options(proxypp_options INTERFACE $<$<CXX_COMPILER_ID:MSVC>:/utf-8> $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(proxypp_options INTERFACE /W4 /utf-8 /bigobj)
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(proxypp_options INTERFACE -Wall -Wextra -Wpedantic)
+endif ()
+#target_compile_options(proxypp_options INTERFACE $<$<CXX_COMPILER_ID:MSVC>:/utf-8> $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
+
 target_compile_definitions(proxypp_options INTERFACE
         SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE
         $<$<PLATFORM_ID:Windows>:_WIN32_WINNT=0x0A00>
