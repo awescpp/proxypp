@@ -3,7 +3,7 @@ name: CI
 on:
   push:
     branches:
-      - "master"
+      - "dev/ci-test"
     paths:
       - app/**
       - src/**
@@ -18,7 +18,7 @@ on:
 
   pull_request:
     branches:
-      - "master"
+      - "dev/ci-test"
     paths:
       - app/**
       - src/**
@@ -35,20 +35,18 @@ on:
 
 permissions:
   contents: read
-  attestations: read
+
 
 jobs:
   windows-clang-cl:
-    name: Windows / LLVM 22.1.8 / Ninja
+    name: Windows / MSVC / Ninja
     runs-on: windows-2022
     defaults:
       run:
         shell: pwsh
     env:
-      LLVM_VERSION: "22.1.8"
-      DEBUG_OUT_DIR: "cmake-build-debug"
-      RELEASE_OUT_DIR: "cmake-build-release"
-      VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}/.vcpkg-bincache,readwrite"
+      DEBUG_OUT_DIR: "out/build/windows-msvc-debug-ci"
+      RELEASE_OUT_DIR: "out/build/windows-msvc-release-ci"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -58,103 +56,50 @@ jobs:
         with:
           arch: 'x64'
 
-      - name: Install LLVM
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Verify MSVC and Ninja toolchain
         run: |
           $ErrorActionPreference = "Stop"
-          $PSNativeCommandUseErrorActionPreference = $true
-          
-          $llvmRoot = "C:\LLVM\$env:LLVM_VERSION"
-          $installer = Join-Path $env:RUNNER_TEMP "LLVM-$env:LLVM_VERSION-win64.exe"
-          
-          $url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-$env:LLVM_VERSION/LLVM-$env:LLVM_VERSION-win64.exe"
-          curl.exe -sS --fail --location --retry 3 --output $installer $url
-          
-          gh attestation verify $installer --repo llvm/llvm-project
-          
-          $process = Start-Process -FilePath $installer -ArgumentList @("/S", "/D=$llvmRoot") -Wait -PassThru
-          if($process.ExitCode -ne 0) {
-            throw "LLVM installer failed with exit code $($process.ExitCode)."
-          }
-          
-          # Make LLVM_ROOT available to subsequent steps.
-          "LLVM_ROOT=$llvmRoot" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          
-          # Add LLVM binaries to PATH for subsequent steps.
-          "$llvmRoot\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      - name: Verify LLVM and Ninja toolchain
-        run: |
-          $ErrorActionPreference = "Stop"
-          $PSNativeCommandUseErrorActionPreference = $true
+          Get-Command cl.exe -ErrorAction Stop
+          Get-Command link.exe -ErrorAction Stop
+          Get-Command rc.exe -ErrorAction Stop
+          Get-Command mt.exe -ErrorAction Stop
+          Get-Command cmake.exe -ErrorAction Stop
+          Get-Command ninja.exe -ErrorAction Stop
           
-          $expectedClang = Join-Path $env:LLVM_ROOT "bin\clang-cl.exe"
-          $actualClang = (Get-Command clang-cl).Source
-          
-          if(
-            [System.IO.Path]::GetFullPath($actualClang) -ne
-            [System.IO.Path]::GetFullPath($expectedClang)
-          )
-            {
-              throw "Unexpected clang-cl: $actualClang"
-            }
-          
-          clang-cl --version
-          lld-link --version
-          llvm-profdata --version
-          llvm-cov --version
+          cmake --version
           ninja --version
-          
-          Get-Command llvm-rc -ErrorAction Stop
-          Get-Command llvm-mt -ErrorAction Stop
-          
-          $versionOutput = clang-cl --version | Select-Object -First 1
-          
-          if(-not $versionOutput.Contains($env:LLVM_VERSION)) 
-          {
-            throw "Expected LLVM $env:LLVM_VERSION, got: $versionOutput"
-          }
 
       - name: Restore vcpkg binary cache
         uses: actions/cache@v6
         with:
           path: .vcpkg-bincache
-          key: vcpkg-${{ runner.os }}-clang-cl-x64-llvm-${{ env.LLVM_VERSION }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          key: vcpkg-${{ runner.os }}-msvc-x64-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
           restore-keys: |
-            vcpkg-${{ runner.os }}-clang-cl-x64-llvm-${{ env.LLVM_VERSION }}-
+            vcpkg-${{ runner.os }}-msvc-x64-
 
       - name: Configure Debug and Release
         run: |
           $ErrorActionPreference = "Stop"
           $PSNativeCommandUseErrorActionPreference = $true
-          
-          $commandArgs = @("-S", ".", "-G", "Ninja"
-            "-DCMAKE_CXX_COMPILER=$env:LLVM_ROOT\bin\clang-cl.exe"
-            "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake"
-            "-DVCPKG_TARGET_TRIPLET=x64-windows"
-            "-DVCPKG_USE_LEGACY_APPLOCAL=ON"
-          )
-          $debugArgs = $commandArgs + @("-B", "$env:DEBUG_OUT_DIR", "-DCMAKE_BUILD_TYPE=Debug")
-          $releaseArgs = $commandArgs + @("-B", "$env:RELEASE_OUT_DIR", "-DCMAKE_BUILD_TYPE=Release")
-          cmake @debugArgs
-          cmake @releaseArgs
+          cmake --preset windows-msvc-debug-ci
+          cmake --preset windows-msvc-release-ci
 
       - name: Build Debug
         run: |
-          cmake --build $env:DEBUG_OUT_DIR --parallel
+          cmake --build --preset windows-msvc-debug-ci --parallel
 
       - name: Test Debug
         run: |
-          ctest --test-dir $env:DEBUG_OUT_DIR --output-on-failure
+          ctest --preset windows-msvc-debug-ci
 
       - name: Build Release
         run: |
-          cmake --build $env:RELEASE_OUT_DIR --parallel
+          cmake --build --preset windows-msvc-release-ci --parallel
 
       - name: Test Release
         run: |
-          ctest --test-dir $env:RELEASE_OUT_DIR --output-on-failure
+          ctest --preset windows-msvc-release-ci
 
       # region: E2E Test
 
@@ -206,6 +151,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
 
           Copy-Item $exe $artifactDir
+          Copy-Item "examples/rules/rules02.json" -Destination $artifactDir/rules.json
           
           Get-ChildItem -Path $env:DEBUG_OUT_DIR -Filter "*.dll" | ForEach-Object {
             Copy-Item $_.FullName $artifactDir
@@ -222,6 +168,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
 
           Copy-Item $exe $artifactDir
+          Copy-Item "examples/rules/rules02.json" -Destination $artifactDir/rules.json
 
           Get-ChildItem -Path $env:RELEASE_OUT_DIR -Filter "*.dll" | ForEach-Object {
           Copy-Item $_.FullName $artifactDir
