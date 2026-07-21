@@ -29,6 +29,33 @@
       }
     },
     {
+      "name": "windows-msvc-ci-base",
+      "hidden": true,
+      "inherits": "windows-msvc-base",
+      "cacheVariables": {
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/out/vcpkg/windows-msvc-ci",
+        "VCPKG_USE_LEGACY_APPLOCAL": true
+      },
+      "environment": {
+        "VCPKG_ROOT": "$env{VCPKG_INSTALLATION_ROOT}",
+        "VCPKG_BINARY_SOURCES": "clear;files,${sourceDir}/.vcpkg-bincache,readwrite"
+      }
+    },
+    {
+      "name": "windows-msvc-debug-ci",
+      "inherits": [
+        "windows-msvc-ci-base",
+        "mode-debug-base"
+      ]
+    },
+    {
+      "name": "windows-msvc-release-ci",
+      "inherits": [
+        "windows-msvc-ci-base",
+        "mode-release-base"
+      ]
+    },
+    {
       "name": "linux-gcc-base",
       "hidden": true,
       "generator": "Ninja",
@@ -76,6 +103,16 @@
     {
       "name": "build-base",
       "hidden": true
+    },
+    {
+      "name": "windows-msvc-debug-ci",
+      "configurePreset": "windows-msvc-debug-ci",
+      "inherits": "build-base"
+    },
+    {
+      "name": "windows-msvc-release-ci",
+      "configurePreset": "windows-msvc-release-ci",
+      "inherits": "build-base"
     }
   ],
   "testPresets": [
@@ -88,6 +125,16 @@
       "execution": {
         "noTestsAction": "error"
       }
+    },
+    {
+      "name": "windows-msvc-debug-ci",
+      "configurePreset": "windows-msvc-debug-ci",
+      "inherits": "test-base"
+    },
+    {
+      "name": "windows-msvc-release-ci",
+      "configurePreset": "windows-msvc-release-ci",
+      "inherits": "test-base"
     }
   ]
 }
