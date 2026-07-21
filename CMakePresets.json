@@ -22,38 +22,12 @@
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
         "VCPKG_TARGET_TRIPLET": "x64-windows",
         "VCPKG_INSTALL_OPTIONS": "--clean-after-build",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/cmake/vcpkg-ports",
         "CMAKE_EXPORT_COMPILE_COMMANDS": true
       },
       "environment": {
         "VSLANG": "1033"
       }
-    },
-    {
-      "name": "windows-msvc-ci-base",
-      "hidden": true,
-      "inherits": "windows-msvc-base",
-      "cacheVariables": {
-        "VCPKG_INSTALLED_DIR": "${sourceDir}/out/vcpkg/windows-msvc-ci",
-        "VCPKG_USE_LEGACY_APPLOCAL": true
-      },
-      "environment": {
-        "VCPKG_ROOT": "$env{VCPKG_INSTALLATION_ROOT}",
-        "VCPKG_BINARY_SOURCES": "clear;files,${sourceDir}/.vcpkg-bincache,readwrite"
-      }
-    },
-    {
-      "name": "windows-msvc-debug-ci",
-      "inherits": [
-        "windows-msvc-ci-base",
-        "mode-debug-base"
-      ]
-    },
-    {
-      "name": "windows-msvc-release-ci",
-      "inherits": [
-        "windows-msvc-ci-base",
-        "mode-release-base"
-      ]
     },
     {
       "name": "linux-gcc-base",
@@ -88,15 +62,48 @@
       }
     },
     {
-      "name": "mode-asan-base",
+      "name": "mode-relwithdebinfo-base",
       "hidden": true,
-      "inherits": "mode-debug-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "asan-base",
+      "hidden": true,
       "cacheVariables": {
         "PROXYPP_ENABLE_ASAN": true
       },
       "environment": {
         "ASAN_OPTIONS": "halt_on_error=1"
       }
+    },
+    {
+      "name": "windows-msvc-ci-base",
+      "hidden": true,
+      "inherits": "windows-msvc-base",
+      "cacheVariables": {
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/out/vcpkg/windows-msvc-ci",
+        "VCPKG_USE_LEGACY_APPLOCAL": true
+      },
+      "environment": {
+        "VCPKG_ROOT": "$env{VCPKG_INSTALLATION_ROOT}",
+        "VCPKG_BINARY_SOURCES": "clear;files,${sourceDir}/.vcpkg-bincache,readwrite"
+      }
+    },
+    {
+      "name": "windows-msvc-debug-ci",
+      "inherits": [
+        "windows-msvc-ci-base",
+        "mode-debug-base"
+      ]
+    },
+    {
+      "name": "windows-msvc-release-ci",
+      "inherits": [
+        "windows-msvc-ci-base",
+        "mode-release-base"
+      ]
     }
   ],
   "buildPresets": [
