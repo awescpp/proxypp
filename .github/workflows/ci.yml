@@ -38,7 +38,7 @@ permissions:
 
 
 jobs:
-  windows-clang-cl:
+  windows-msvc:
     name: Windows / MSVC / Ninja
     runs-on: windows-2022
     defaults:
@@ -189,3 +189,53 @@ jobs:
           path: artifacts/proxypp-windows-x64-release
           if-no-files-found: error
 
+  windows-msvc-asan:
+    name: Windows / MSVC / Ninja / ASan
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup MSVC and Windows SDK environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: 'x64'
+
+      - name: Verify MSVC and Ninja toolchain
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          Get-Command cl.exe -ErrorAction Stop
+          Get-Command link.exe -ErrorAction Stop
+          Get-Command cmake.exe -ErrorAction Stop
+          Get-Command ninja.exe -ErrorAction Stop
+
+          cmake --version
+          ninja --version
+
+      - name: Restore vcpkg binary cache
+        uses: actions/cache@v6
+        with:
+          path: .vcpkg-bincache
+          key: vcpkg-${{ runner.os }}-msvc-x64-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-msvc-x64-
+
+      - name: Configure windows-msvc-asan-ci
+        run: |
+          $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $true
+          cmake --preset windows-msvc-asan-ci
+
+      - name: Build windows-msvc-asan-ci
+        run: |
+          cmake --build --preset windows-msvc-asan-ci --parallel
+
+
+      - name: Test windows-msvc-asan-ci
+        run: |
+          ctest --preset windows-msvc-asan-ci

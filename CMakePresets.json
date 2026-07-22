@@ -104,6 +104,14 @@
         "windows-msvc-ci-base",
         "mode-release-base"
       ]
+    },
+    {
+      "name": "windows-msvc-asan-ci",
+      "inherits": [
+        "windows-msvc-ci-base",
+        "mode-relwithdebinfo-base",
+        "asan-base"
+      ]
     }
   ],
   "buildPresets": [
@@ -119,6 +127,11 @@
     {
       "name": "windows-msvc-release-ci",
       "configurePreset": "windows-msvc-release-ci",
+      "inherits": "build-base"
+    },
+    {
+      "name": "windows-msvc-asan-ci",
+      "configurePreset": "windows-msvc-asan-ci",
       "inherits": "build-base"
     }
   ],
@@ -141,6 +154,11 @@
     {
       "name": "windows-msvc-release-ci",
       "configurePreset": "windows-msvc-release-ci",
+      "inherits": "test-base"
+    },
+    {
+      "name": "windows-msvc-asan-ci",
+      "configurePreset": "windows-msvc-asan-ci",
       "inherits": "test-base"
     }
   ]
