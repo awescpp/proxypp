@@ -7,23 +7,29 @@
   },
   "configurePresets": [
     {
-      "name": "windows-msvc-base",
+      "name": "build-base",
       "hidden": true,
       "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true,
+        "VCPKG_INSTALL_OPTIONS": "--clean-after-build"
+      }
+    },
+    {
+      "name": "windows-msvc-base",
+      "hidden": true,
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
         "rhs": "Windows"
       },
-      "binaryDir": "${sourceDir}/out/build/${presetName}",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "cl",
         "CMAKE_CXX_COMPILER": "cl",
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
         "VCPKG_TARGET_TRIPLET": "x64-windows",
-        "VCPKG_INSTALL_OPTIONS": "--clean-after-build",
-        "VCPKG_OVERLAY_PORTS": "${sourceDir}/cmake/vcpkg-ports",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": true
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/cmake/vcpkg-ports"
       },
       "environment": {
         "VSLANG": "1033"
@@ -32,20 +38,15 @@
     {
       "name": "linux-gcc-base",
       "hidden": true,
-      "generator": "Ninja",
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
         "rhs": "Linux"
       },
-      "binaryDir": "${sourceDir}/out/build/${presetName}",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++",
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "VCPKG_TARGET_TRIPLET": "x64-linux",
-        "VCPKG_INSTALL_OPTIONS": "--clean-after-build",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": true
+        "VCPKG_TARGET_TRIPLET": "x64-linux"
       }
     },
     {
