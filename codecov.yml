@@ -1,0 +1,8 @@
+parsers:
+  lcov:
+    partials_as_hits: true
+
+coverage:
+  precision: 1
+  round: down
+  range: 50..80
