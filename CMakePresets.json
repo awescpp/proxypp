@@ -25,6 +25,7 @@
         "lhs": "${hostSystemName}",
         "rhs": "Windows"
       },
+      "inherits": "build-base",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "cl",
         "CMAKE_CXX_COMPILER": "cl",
@@ -43,6 +44,7 @@
         "lhs": "${hostSystemName}",
         "rhs": "Linux"
       },
+      "inherits": "build-base",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "gcc",
         "CMAKE_CXX_COMPILER": "g++",
