@@ -1,6 +1,7 @@
 # proxy++
 
 [![CI](https://github.com/awescpp/proxypp/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/awescpp/proxypp/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/awescpp/proxypp/branch/master/graph/badge.svg)](https://codecov.io/gh/awescpp/proxypp)
 [![License](https://img.shields.io/github/license/awescpp/proxypp)](LICENSE)
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-blue)
 ![CMake](https://img.shields.io/badge/build-CMake-blue)

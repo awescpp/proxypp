@@ -133,6 +133,10 @@
     {
       "name": "linux-gcc-release-ci",
       "inherits": ["linux-gcc-ci-base", "mode-release-base"]
+    },
+    {
+      "name": "linux-gcc-coverage-ci",
+      "inherits": ["linux-gcc-debug-ci", "coverage-base"]
     }
   ],
   "buildPresets": [
@@ -163,6 +167,11 @@
     {
       "name": "linux-gcc-release-ci",
       "configurePreset": "linux-gcc-release-ci",
+      "inherits": "build-base"
+    },
+    {
+      "name": "linux-gcc-coverage-ci",
+      "configurePreset": "linux-gcc-coverage-ci",
       "inherits": "build-base"
     }
   ],
@@ -200,6 +209,11 @@
     {
       "name": "linux-gcc-release-ci",
       "configurePreset": "linux-gcc-release-ci",
+      "inherits": "test-base"
+    },
+    {
+      "name": "linux-gcc-coverage-ci",
+      "configurePreset": "linux-gcc-coverage-ci",
       "inherits": "test-base"
     }
   ]
