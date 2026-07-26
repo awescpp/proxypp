@@ -83,6 +83,13 @@
       }
     },
     {
+      "name": "coverage-base",
+      "hidden": true,
+      "cacheVariables": {
+        "PROXYPP_ENABLE_COVERAGE": true
+      }
+    },
+    {
       "name": "vcpkg-ci-base",
       "hidden": true,
       "environment": {
@@ -93,27 +100,18 @@
     {
       "name": "windows-msvc-ci-base",
       "hidden": true,
-      "inherits": [
-        "windows-msvc-base",
-        "vcpkg-ci-base"
-      ],
+      "inherits": ["windows-msvc-base", "vcpkg-ci-base"],
       "cacheVariables": {
         "VCPKG_USE_LEGACY_APPLOCAL": true
       }
     },
     {
       "name": "windows-msvc-debug-ci",
-      "inherits": [
-        "windows-msvc-ci-base",
-        "mode-debug-base"
-      ]
+      "inherits": ["windows-msvc-ci-base", "mode-debug-base"]
     },
     {
       "name": "windows-msvc-release-ci",
-      "inherits": [
-        "windows-msvc-ci-base",
-        "mode-release-base"
-      ]
+      "inherits": ["windows-msvc-ci-base", "mode-release-base"]
     },
     {
       "name": "windows-msvc-asan-ci",
@@ -126,24 +124,15 @@
     {
       "name": "linux-gcc-ci-base",
       "hidden": true,
-      "inherits": [
-        "linux-gcc-base",
-        "vcpkg-ci-base"
-      ]
+      "inherits": ["linux-gcc-base", "vcpkg-ci-base"]
     },
     {
       "name": "linux-gcc-debug-ci",
-      "inherits": [
-        "linux-gcc-ci-base",
-        "mode-debug-base"
-      ]
+      "inherits": ["linux-gcc-ci-base", "mode-debug-base"]
     },
     {
       "name": "linux-gcc-release-ci",
-      "inherits": [
-        "linux-gcc-ci-base",
-        "mode-release-base"
-      ]
+      "inherits": ["linux-gcc-ci-base", "mode-release-base"]
     }
   ],
   "buildPresets": [
