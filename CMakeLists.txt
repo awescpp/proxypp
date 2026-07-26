@@ -45,15 +45,7 @@ add_library(proxypp_options INTERFACE)
 add_library(proxypp::options ALIAS proxypp_options)
 target_include_directories(proxypp_options INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_precompile_headers(proxypp_options INTERFACE src/proxypp/pch.h)
-
-#if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-#    target_compile_options(proxypp_options INTERFACE /W4 /utf-8 /bigobj)
-#elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-#    target_compile_options(proxypp_options INTERFACE -Wall -Wextra -Wpedantic)
-#endif ()
-
 target_compile_options(proxypp_options INTERFACE $<$<CXX_COMPILER_ID:MSVC>:/utf-8> $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
-
 target_compile_definitions(proxypp_options INTERFACE
         SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE
         $<$<PLATFORM_ID:Windows>:_WIN32_WINNT=0x0A00>
@@ -77,7 +69,6 @@ if (PROXYPP_ENABLE_ASAN)
     endif ()
 endif ()
 
-
 #proxypp::common
 add_library(proxypp_common STATIC src/proxypp/error.cpp
         src/proxypp/helper/json_helper.cpp
@@ -86,41 +77,12 @@ add_library(proxypp_common STATIC src/proxypp/error.cpp
         src/proxypp/helper/cli_helper.cpp
 )
 add_library(proxypp::common ALIAS proxypp_common)
-target_link_libraries(proxypp_common PUBLIC proxypp::options jsoncons::jsoncons)
+target_link_libraries(proxypp_common PUBLIC proxypp::options jsoncons::jsoncons CLI11::CLI11)
 
 # proxypp::log
 add_library(proxypp_log STATIC src/proxypp/log/log.cpp)
 add_library(proxypp::log ALIAS proxypp_log)
 target_link_libraries(proxypp_log PUBLIC proxypp::options proxypp::common)
-
-# proxypp::http
-add_library(proxypp_http STATIC
-        src/proxypp/http/adapter/beast_request_adapter.cpp
-        src/proxypp/http/adapter/beast_response_adapter.cpp
-        src/proxypp/http/http_proxy_session.cpp
-        src/proxypp/http/http_message_utils.cpp
-        src/proxypp/http/body_info.cpp
-)
-add_library(proxypp::http ALIAS proxypp_http)
-target_link_libraries(proxypp_http PUBLIC proxypp::options proxypp::log proxypp::common)
-
-# proxypp::rule
-add_library(proxypp_rule STATIC
-        src/proxypp/rule/config.cpp
-        src/proxypp/rule/error.cpp
-        src/proxypp/rule/op.cpp
-        src/proxypp/rule/match.cpp
-        src/proxypp/helper/json_schema_helper.cpp
-        src/proxypp/rule/rule_engine.cpp
-        src/proxypp/rule/match_context.cpp
-        src/proxypp/rule/http/model.cpp
-        src/proxypp/rule/http/action_executor.cpp
-        src/proxypp/rule/http/context_injector.cpp
-        src/proxypp/rule/http/apply.cpp
-        src/proxypp/rule/rule_file.cpp
-)
-add_library(proxypp::rule ALIAS proxypp_rule)
-target_link_libraries(proxypp_rule PUBLIC proxypp_options proxypp::log proxypp::common)
 
 # proxypp::script
 add_library(proxypp_script STATIC
@@ -133,7 +95,35 @@ add_library(proxypp_script STATIC
         src/proxypp/script/qjs/detail/exception_message.cpp
 )
 add_library(proxypp::script ALIAS proxypp_script)
-target_link_libraries(proxypp_script PUBLIC proxypp::options proxypp::log proxypp::common qjs)
+target_link_libraries(proxypp_script PUBLIC proxypp::options proxypp::common proxypp::log qjs)
+
+# proxypp::rule
+add_library(proxypp_rule STATIC
+        src/proxypp/rule/config.cpp
+        src/proxypp/rule/error.cpp
+        src/proxypp/rule/op.cpp
+        src/proxypp/rule/match.cpp
+        src/proxypp/rule/rule_engine.cpp
+        src/proxypp/rule/match_context.cpp
+        src/proxypp/rule/http/model.cpp
+        src/proxypp/rule/http/action_executor.cpp
+        src/proxypp/rule/http/context_injector.cpp
+        src/proxypp/rule/http/apply.cpp
+        src/proxypp/rule/rule_file.cpp
+)
+add_library(proxypp::rule ALIAS proxypp_rule)
+target_link_libraries(proxypp_rule PUBLIC proxypp::options proxypp::common proxypp::log proxypp::script)
+
+# proxypp::http
+add_library(proxypp_http STATIC
+        src/proxypp/http/adapter/beast_request_adapter.cpp
+        src/proxypp/http/adapter/beast_response_adapter.cpp
+        src/proxypp/http/http_proxy_session.cpp
+        src/proxypp/http/http_message_utils.cpp
+        src/proxypp/http/body_info.cpp
+)
+add_library(proxypp::http ALIAS proxypp_http)
+target_link_libraries(proxypp_http PUBLIC proxypp::options proxypp::common proxypp::log proxypp::rule)
 
 # proxypp::core
 add_library(proxypp_core STATIC src/proxypp/core/tcp_server.cpp)
@@ -141,16 +131,16 @@ add_library(proxypp::core ALIAS proxypp_core)
 target_link_libraries(proxypp_core PUBLIC
         proxypp::options
         proxypp::common
-        proxypp::http
+        proxypp::log
         proxypp::script
         proxypp::rule
-        proxypp::log
+        proxypp::http
 )
 
 # proxy++ executable
 if (PROXYPP_BUILD_APP)
     add_executable(proxy++ app/main.cpp)
-    target_link_libraries(proxy++ PRIVATE CLI11::CLI11 proxypp::core)
+    target_link_libraries(proxy++ PRIVATE proxypp::core CLI11::CLI11)
 endif ()
 
 include(CTest)

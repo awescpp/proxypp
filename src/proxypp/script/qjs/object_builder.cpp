@@ -4,7 +4,7 @@
  */
 
 #include "proxypp/script/qjs/object_builder.h"
-#include "proxypp/http/body_info.h"
+// #include "proxypp/http/body_info.h"
 #include "proxypp/script/qjs/error.h"
 #include <format>
 
