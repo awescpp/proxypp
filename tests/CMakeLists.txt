@@ -10,7 +10,7 @@ function(proxypp_add_boost_tests target)
     endif ()
 
     add_executable(${target} ${ARG_SOURCES})
-    target_compile_definitions(${target} PRIVATE BOOST_TEST_DYN_LINK ${ARG_DEFINITIONS})
+    target_compile_definitions(${target} PRIVATE ${ARG_DEFINITIONS})
     target_link_libraries(${target} PRIVATE Boost::unit_test_framework ${ARG_LIBRARIES})
     add_test(NAME ${target} COMMAND ${target})
 
