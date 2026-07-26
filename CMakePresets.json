@@ -83,16 +83,22 @@
       }
     },
     {
-      "name": "windows-msvc-ci-base",
+      "name": "vcpkg-ci-base",
       "hidden": true,
-      "inherits": "windows-msvc-base",
-      "cacheVariables": {
-        "VCPKG_INSTALLED_DIR": "${sourceDir}/out/vcpkg/windows-msvc-ci",
-        "VCPKG_USE_LEGACY_APPLOCAL": true
-      },
       "environment": {
         "VCPKG_ROOT": "$env{VCPKG_INSTALLATION_ROOT}",
         "VCPKG_BINARY_SOURCES": "clear;files,${sourceDir}/.vcpkg-bincache,readwrite"
+      }
+    },
+    {
+      "name": "windows-msvc-ci-base",
+      "hidden": true,
+      "inherits": [
+        "windows-msvc-base",
+        "vcpkg-ci-base"
+      ],
+      "cacheVariables": {
+        "VCPKG_USE_LEGACY_APPLOCAL": true
       }
     },
     {
@@ -116,6 +122,28 @@
         "mode-relwithdebinfo-base",
         "asan-base"
       ]
+    },
+    {
+      "name": "linux-gcc-ci-base",
+      "hidden": true,
+      "inherits": [
+        "linux-gcc-base",
+        "vcpkg-ci-base"
+      ]
+    },
+    {
+      "name": "linux-gcc-debug-ci",
+      "inherits": [
+        "linux-gcc-ci-base",
+        "mode-debug-base"
+      ]
+    },
+    {
+      "name": "linux-gcc-release-ci",
+      "inherits": [
+        "linux-gcc-ci-base",
+        "mode-release-base"
+      ]
     }
   ],
   "buildPresets": [
@@ -136,6 +164,16 @@
     {
       "name": "windows-msvc-asan-ci",
       "configurePreset": "windows-msvc-asan-ci",
+      "inherits": "build-base"
+    },
+    {
+      "name": "linux-gcc-debug-ci",
+      "configurePreset": "linux-gcc-debug-ci",
+      "inherits": "build-base"
+    },
+    {
+      "name": "linux-gcc-release-ci",
+      "configurePreset": "linux-gcc-release-ci",
       "inherits": "build-base"
     }
   ],
@@ -163,6 +201,16 @@
     {
       "name": "windows-msvc-asan-ci",
       "configurePreset": "windows-msvc-asan-ci",
+      "inherits": "test-base"
+    },
+    {
+      "name": "linux-gcc-debug-ci",
+      "configurePreset": "linux-gcc-debug-ci",
+      "inherits": "test-base"
+    },
+    {
+      "name": "linux-gcc-release-ci",
+      "configurePreset": "linux-gcc-release-ci",
       "inherits": "test-base"
     }
   ]
