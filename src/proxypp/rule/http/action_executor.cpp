@@ -8,6 +8,7 @@
 #include "proxypp/rule/op.h"
 #include "request_adapter.h"
 #include "response_adapter.h"
+#include <boost/algorithm/string.hpp>
 #include <unordered_set>
 
 namespace

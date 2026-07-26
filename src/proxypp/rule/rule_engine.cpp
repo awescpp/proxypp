@@ -6,6 +6,7 @@
 #include "proxypp/rule/rule_engine.h"
 #include "proxypp/rule/error.h"
 #include "proxypp/script/qjs.h"
+#include <format>
 
 namespace proxypp::rule
 {

@@ -6,6 +6,7 @@
 #define BOOST_TEST_MODULE QuickJSApiTest
 
 #include <boost/test/unit_test.hpp>
+#include <format>
 #include <quickjs.h>
 
 struct JsRuntimeDeleter

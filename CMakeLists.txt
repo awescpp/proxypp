@@ -44,7 +44,6 @@ find_package(jsoncons CONFIG REQUIRED)
 add_library(proxypp_options INTERFACE)
 add_library(proxypp::options ALIAS proxypp_options)
 target_include_directories(proxypp_options INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_precompile_headers(proxypp_options INTERFACE src/proxypp/pch.h)
 target_compile_options(proxypp_options INTERFACE $<$<CXX_COMPILER_ID:MSVC>:/utf-8> $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
 target_compile_definitions(proxypp_options INTERFACE
         SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE
@@ -115,6 +114,7 @@ add_library(proxypp::rule ALIAS proxypp_rule)
 target_link_libraries(proxypp_rule PUBLIC proxypp::options proxypp::common proxypp::log proxypp::script)
 
 # proxypp::http
+set(PROXYPP_PCH "${CMAKE_SOURCE_DIR}/src/proxypp/pch.h")
 add_library(proxypp_http STATIC
         src/proxypp/http/adapter/beast_request_adapter.cpp
         src/proxypp/http/adapter/beast_response_adapter.cpp
@@ -123,6 +123,7 @@ add_library(proxypp_http STATIC
         src/proxypp/http/body_info.cpp
 )
 add_library(proxypp::http ALIAS proxypp_http)
+target_precompile_headers(proxypp_http PRIVATE "${PROXYPP_PCH}")
 target_link_libraries(proxypp_http PUBLIC proxypp::options proxypp::common proxypp::log proxypp::rule)
 
 # proxypp::core

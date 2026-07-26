@@ -9,6 +9,7 @@
 #include "proxypp/script/qjs/value.h"
 #include "request_adapter.h"
 #include "response_adapter.h"
+#include <boost/algorithm/string.hpp>
 #include <type_traits>
 
 namespace qjs = proxypp::script::qjs;
