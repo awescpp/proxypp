@@ -243,8 +243,6 @@ jobs:
           ctest --preset windows-msvc-asan-ci
 
 
-
-
   linux-gcc:
     name: Ubuntu / GCC / Ninja
     runs-on: ubuntu-24.04
@@ -377,6 +375,40 @@ jobs:
           name: proxypp-linux-x64-release
           path: artifacts/proxypp-linux-x64-release.tar.gz
           if-no-files-found: error
+
+  linux-gcc-sanitizers:
+    name: Ubuntu / GCC / Ninja / ASan / UBSan
+    runs-on: ubuntu-24.04
+
+    permissions:
+      contents: read
+
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Restore vcpkg binary cache
+        uses: actions/cache@v6
+        with:
+          path: .vcpkg-bincache
+          key: vcpkg-${{ runner.os }}-gcc-x64-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-gcc-x64-
+
+      - name: Configure
+        run: |
+          cmake --preset linux-gcc-sanitizers-ci
+
+      - name: Build
+        run: |
+          cmake --build --preset linux-gcc-sanitizers-ci
+
+      - name: Run sanitizer tests
+        run: |
+          ctest --preset linux-gcc-sanitizers-ci
 
   linux-gcc-coverage:
     name: Ubuntu / GCC / Coverage
