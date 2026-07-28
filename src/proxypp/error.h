@@ -21,12 +21,15 @@ namespace proxypp
 
     FileNotFound,
     FileReadFailed,
+    FileWriteFailed,
     BadFileFormat,
+    FileOperationFailed,
 
     JsonParseFailed,
     JsonConversionFailed,
     InvalidJsonSchema,
     JsonSchemaValidationFailed,
+    StartTcpServerFailed,
   };
 
   const boost::system::error_category& GetErrorCategory() noexcept;

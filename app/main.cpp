@@ -13,77 +13,130 @@
 #include <CLI/CLI.hpp>
 #include <boost/dll.hpp>
 #include <filesystem>
+#include <format>
+#include <fstream>
 
-struct GlobalOpts
+namespace
 {
-  bool verbose = false;
-};
+  struct GlobalOpts
+  {
+    bool verbose = false;
+  };
 
-struct HttpOpts
-{
-  std::string bind = "127.0.0.1";
-  std::size_t port = 3000;
-  std::string rule_file;
-};
+  struct HttpOpts
+  {
+    std::string bind = "127.0.0.1";
+    std::size_t port = 3000;
+    std::string ready_file;
+    std::string rule_file;
+  };
 
-struct SocksOpts
-{
-  std::string bind = "127.0.0.1";
-  std::size_t port = 3000;
-};
+  struct SocksOpts
+  {
+    std::string bind = "127.0.0.1";
+    std::size_t port = 3000;
+  };
 
-struct AppOpts
-{
-  GlobalOpts global;
-  HttpOpts http;
-  SocksOpts socks;
-};
+  struct AppOpts
+  {
+    GlobalOpts global;
+    HttpOpts http;
+    SocksOpts socks;
+  };
 
-struct CliHandles
-{
-  CLI::App* http = nullptr;
-  CLI::Option* rule_file_opt = nullptr;
-};
+  struct CliHandles
+  {
+    CLI::App* http = nullptr;
+    CLI::Option* rule_file_opt = nullptr;
+  };
 
-CliHandles ConfigureCli(CLI::App& app, AppOpts& opts)
-{
-  app.name("proxy++");
+  CliHandles ConfigureCli(CLI::App& app, AppOpts& opts)
+  {
+    app.name("proxy++");
 
-  app.add_flag("-v,--verbose", opts.global.verbose, "run in verbose mode");
-  app.set_version_flag("-V,--version", "V1.0.0");
+    app.add_flag("-v,--verbose", opts.global.verbose, "run in verbose mode");
+    app.set_version_flag("-V,--version", "V1.0.0");
 
-  CLI::App* http = app.add_subcommand("http", "start http proxy");
-  http->add_option("-b,--bind", opts.http.bind, "bind address");
-  http->add_option("-p,--port", opts.http.port, "bind port")
-    ->check(CLI::Range(0, 65535));
-  CLI::Option* rule_file_opt
-    = http->add_option("-r,--rule-file", opts.http.rule_file, "rule file path")
-        ->check(CLI::ExistingFile);
-  app.require_subcommand(1);
-  return { .http = http, .rule_file_opt = rule_file_opt };
-}
+    CLI::App* http = app.add_subcommand("http", "start http proxy");
+    http->add_option("-b,--bind", opts.http.bind, "bind address");
+    http->add_option("-p,--port", opts.http.port, "bind port")
+      ->check(CLI::Range(0, 65535));
+    http
+      ->add_option("--ready-file", opts.http.ready_file,
+                   "Path to a file created after proxy++ starts listening")
+      ->check(CLI::NonexistentPath);
+    CLI::Option* rule_file_opt
+      = http
+          ->add_option("-r,--rule-file", opts.http.rule_file, "rule file path")
+          ->check(CLI::ExistingFile);
+    app.require_subcommand(1);
+    return { .http = http, .rule_file_opt = rule_file_opt };
+  }
 
-proxypp::Result<proxypp::rule::Config>
-LoadRuleConfig(const std::filesystem::path& rule_file_path)
-{
-  const auto load_rules = proxypp::rule::LoadRulesFromFile(rule_file_path);
-  if(!load_rules)
+  proxypp::Result<proxypp::rule::Config>
+  LoadRuleConfig(const std::filesystem::path& rule_file_path)
+  {
+    const auto load_rules = proxypp::rule::LoadRulesFromFile(rule_file_path);
+    if(!load_rules)
+      {
+        return proxypp::Unexpected(load_rules.error());
+      }
+    return *load_rules;
+  }
+
+  proxypp::Result<std::shared_ptr<proxypp::rule::RuleEngine>> InitRuleEngine()
+  {
+    auto rule_engine_result = proxypp::rule::RuleEngine::Create();
+    if(!rule_engine_result)
+      {
+        return proxypp::Unexpected(rule_engine_result.error());
+      }
+    auto rule_engine = std::make_shared<proxypp::rule::RuleEngine>(
+      std::move(*rule_engine_result));
+    return rule_engine;
+  }
+
+  proxypp::Result<void>
+  WriteReadyFile(const std::filesystem::path& read_file, std::string_view host,
+                 std::uint16_t port)
+  {
+    auto temporary_file = read_file;
+    temporary_file += ".tmp";
+
     {
-      return proxypp::Unexpected(load_rules.error());
-    }
-  return *load_rules;
-}
+      std::ofstream output { temporary_file,
+                             std::ios::binary | std::ios::trunc };
+      if(!output)
+        {
+          return proxypp::Unexpected(proxypp::Error(
+            proxypp::Errc::InternalError, temporary_file.string()));
+        }
 
-proxypp::Result<std::shared_ptr<proxypp::rule::RuleEngine>> InitRuleEngine()
-{
-  auto rule_engine_result = proxypp::rule::RuleEngine::Create();
-  if(!rule_engine_result)
-    {
-      return proxypp::Unexpected(rule_engine_result.error());
+      output << "{\n"
+             << "  \"host\": \"" << host << "\",\n"
+             << "  \"port\": " << port << "\n"
+             << "}\n";
+
+      output.flush();
+      if(!output)
+        {
+          return proxypp::Unexpected(proxypp::Error {
+            proxypp::Errc::FileOperationFailed,
+            std::format("write file {} failed", temporary_file.string()) });
+        }
     }
-  auto rule_engine = std::make_shared<proxypp::rule::RuleEngine>(
-    std::move(*rule_engine_result));
-  return rule_engine;
+    try
+      {
+        std::filesystem::rename(temporary_file, read_file);
+        return {};
+      }
+    catch(const std::exception& e)
+      {
+        return proxypp::Unexpected(
+          proxypp::Error(proxypp::Errc::InternalError,
+                         std::format("rename file failed, {}", e.what())));
+      }
+  }
 }
 
 int main(int argc, char** argv)
@@ -140,6 +193,17 @@ int main(int argc, char** argv)
         {
           std::cerr << start_result.error().message() << "\n";
           return EXIT_FAILURE;
+        }
+
+      if(!opts.http.ready_file.empty())
+        {
+          auto write_result = WriteReadyFile(
+            opts.http.ready_file, start_result->address, start_result->port);
+          if(!write_result)
+            {
+              std::cerr << write_result.error().message() << "\n";
+              return EXIT_FAILURE;
+            }
         }
     }
 
