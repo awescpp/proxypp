@@ -23,17 +23,21 @@ namespace proxypp ::core
     std::shared_ptr<rule::RuleEngine> rule_engine;
   };
 
+  struct ListenEndpoint
+  {
+    std::string address;
+    std::uint16_t port;
+  };
+
   class TcpServer : public std::enable_shared_from_this<TcpServer>
   {
   public:
     explicit TcpServer(asio::any_io_executor ex, TcpServerOptions options);
 
-    void Run();
+    Result<ListenEndpoint> Start();
 
   private:
-    std::string_view address() const { return options_.address; }
-
-    std::size_t port() const { return options_.port; }
+    void StartAccept();
 
     std::shared_ptr<rule::RuleEngine> rule_engine() const
     {

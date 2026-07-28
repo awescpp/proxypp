@@ -55,7 +55,7 @@ CliHandles ConfigureCli(CLI::App& app, AppOpts& opts)
   CLI::App* http = app.add_subcommand("http", "start http proxy");
   http->add_option("-b,--bind", opts.http.bind, "bind address");
   http->add_option("-p,--port", opts.http.port, "bind port")
-    ->check(CLI::Range(1, 65535));
+    ->check(CLI::Range(0, 65535));
   CLI::Option* rule_file_opt
     = http->add_option("-r,--rule-file", opts.http.rule_file, "rule file path")
         ->check(CLI::ExistingFile);
@@ -135,7 +135,12 @@ int main(int argc, char** argv)
       auto server = std::make_shared<proxypp::core::TcpServer>(
         io.get_executor(), options);
 
-      server->Run();
+      auto start_result = server->Start();
+      if(!start_result)
+        {
+          std::cerr << start_result.error().message() << "\n";
+          return EXIT_FAILURE;
+        }
     }
 
   io.run();

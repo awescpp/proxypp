@@ -12,39 +12,68 @@ proxypp::core::TcpServer::TcpServer(asio::any_io_executor ex,
     : acceptor_(ex), options_(std::move(options))
 {}
 
-void proxypp::core::TcpServer::Run()
+proxypp::Result<proxypp::core::ListenEndpoint>
+proxypp::core::TcpServer::Start()
 {
-  const tcp::endpoint ep { asio::ip::make_address(std::string { address() }),
-                           static_cast<asio::ip::port_type>(port()) };
+  const tcp::endpoint endpoint {
+    asio::ip::make_address(std::string { options_.address }),
+    static_cast<asio::ip::port_type>(options_.port)
+  };
 
   boost::system::error_code ec;
 
-  acceptor_.open(ep.protocol(), ec);
+  const auto endpoint_text
+    = fmt::format("{}:{}", endpoint.address().to_string(), endpoint.port());
+
+  auto start_failed = [&](std::string_view context) {
+    return Unexpected(Error {
+      Errc::StartTcpServerFailed,
+      fmt::format("{}: {} (code={}, category={})", context, ec.message(),
+                  ec.value(), ec.category().name()),
+    });
+  };
+
+  acceptor_.open(endpoint.protocol(), ec);
   if(ec)
     {
-      std::cerr << std::format("TcpServer open {}:{} failed", address(),
-                               port());
-      return;
+      return start_failed(
+        fmt::format("failed to open TCP acceptor for {}", endpoint_text));
     }
 
   acceptor_.set_option(asio::socket_base::reuse_address(true), ec);
-
-  acceptor_.bind(ep, ec);
   if(ec)
     {
-      std::cerr << std::format("TcpServer bind {}:{} failed", address(),
-                               port());
-      return;
+      return start_failed(
+        fmt::format("failed to enable SO_REUSEADDR for TCP acceptor on {}",
+                    endpoint_text));
+    }
+
+  acceptor_.bind(endpoint, ec);
+  if(ec)
+    {
+      return start_failed(
+        fmt::format("failed to bind TCP acceptor to {}", endpoint_text));
     }
 
   acceptor_.listen(asio::socket_base::max_listen_connections, ec);
   if(ec)
     {
-      std::cerr << std::format("TcpServer start listening on {}:{} failed",
-                               address(), port());
-      return;
+      return start_failed(
+        fmt::format("failed to listen on TCP endpoint {}", endpoint_text));
     }
 
+  StartAccept();
+
+  const auto address = acceptor_.local_endpoint().address().to_string();
+  const auto port = acceptor_.local_endpoint().port();
+
+  LOG_CORE_INFO("proxy++ running on {}:{}", address, port);
+
+  return ListenEndpoint { .address = address, .port = port };
+}
+
+void proxypp::core::TcpServer::StartAccept()
+{
   auto self = shared_from_this();
 
   asio::co_spawn(
@@ -119,6 +148,4 @@ void proxypp::core::TcpServer::Run()
           LOG_CORE_ERROR("accept coroutine terminated by unknown exception");
         }
     });
-
-  LOG_CORE_INFO("proxy++ running on {}:{}", address(), port());
 }
