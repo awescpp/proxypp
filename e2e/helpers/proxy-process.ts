@@ -123,7 +123,10 @@ function resolveProxyExecutable(): string {
 
   const candidates =
     process.platform === 'win32'
-      ? ['cmake-build-debug/proxy++.exe', 'cmake-build-release/proxy++.exe']
+      ? [
+          'out/build/windows-msvc-debug-local/proxy++.exe',
+          'out/build/windows-msvc-release-local/proxy++.exe',
+        ]
       : ['build/proxy++']
   for (const candidate of candidates) {
     const executable = resolvePath(candidate)
