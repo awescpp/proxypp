@@ -19,10 +19,6 @@ namespace proxypp
     InternalError,
     InvalidArgument,
 
-    FileNotFound,
-    FileReadFailed,
-    FileWriteFailed,
-    BadFileFormat,
     FileOperationFailed,
 
     JsonParseFailed,

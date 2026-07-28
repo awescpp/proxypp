@@ -19,14 +19,10 @@ namespace proxypp
       switch(static_cast<Errc>(ev))
         {
         case Errc::Ok: return "success";
-        case Errc::JsonParseFailed: return "parse json failed";
-        case Errc::FileNotFound: return "file not found";
-        case Errc::FileReadFailed: return "file read failed";
-        case Errc::FileWriteFailed: return "file write failed";
-        case Errc::BadFileFormat: return "bad file format";
-        case Errc::FileOperationFailed: return "file operation failed";
-        case Errc::InvalidArgument: return "invalid argument";
         case Errc::InternalError: return "internal error";
+        case Errc::InvalidArgument: return "invalid argument";
+        case Errc::FileOperationFailed: return "file operation failed";
+        case Errc::JsonParseFailed: return "parse json failed";
         case Errc::JsonConversionFailed: return "convert json failed";
         case Errc::InvalidJsonSchema: return "invalid json schema";
         case Errc::JsonSchemaValidationFailed:
