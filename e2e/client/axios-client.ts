@@ -5,10 +5,9 @@
 
 import axios, { AxiosInstance, ResponseType } from 'axios'
 
-export interface CreateHttpProxyClientOptions {
+interface CreateHttpProxyClientOptions {
   readonly proxyHost: string
   readonly proxyPort: number
-  readonly responseType?: ResponseType
 }
 
 export function createHttpProxyClient(
@@ -24,6 +23,5 @@ export function createHttpProxyClient(
     // treat all status code as success
     validateStatus: () => true,
     maxRedirects: 0,
-    responseType: options?.responseType,
   })
 }

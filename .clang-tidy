@@ -1,0 +1,3 @@
+CheckOptions:
+  - key: bugprone-lambda-function-name.IgnoreMacros
+    value: 'true'
