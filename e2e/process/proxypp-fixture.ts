@@ -5,11 +5,12 @@
 
 import { startProxyppProcess } from '@/e2e/process/proxypp-process'
 
-export function setupProxyppProcess() {
+export function setupProxyppProcess(ruleFile?: string) {
   let proxypp: Awaited<ReturnType<typeof startProxyppProcess>> | undefined
 
   beforeEach(async () => {
     proxypp = await startProxyppProcess({
+      ruleFile,
       args: ['http', '--bind', '127.0.0.1', '--port', '0'],
     })
 

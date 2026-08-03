@@ -1,0 +1,44 @@
+{
+  "$schema": "https://proxypp.net/schemas/proxypp_rules_schema_v1.json",
+  "version": 1,
+  "http": {
+    "rules": [
+      {
+        "name": "set e2e request header",
+        "enabled": true,
+        "phase": "request",
+        "match": {
+          "expr": "true"
+        },
+        "actions": [
+          {
+            "op": "set",
+            "target": "header",
+            "data": {
+              "name": "X-Proxypp-E2E-Request",
+              "value": "request-rule-applied"
+            }
+          }
+        ]
+      },
+      {
+        "name": "set e2e response header",
+        "enabled": true,
+        "phase": "response",
+        "match": {
+          "expr": "true"
+        },
+        "actions": [
+          {
+            "op": "set",
+            "target": "header",
+            "data": {
+              "name": "X-Proxypp-E2E-Response",
+              "value": "response-rule-applied"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

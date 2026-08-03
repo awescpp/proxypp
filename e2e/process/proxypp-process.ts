@@ -14,7 +14,9 @@ const readyTimeoutMilliseconds = 5_000
 
 interface StartProxyppProcessOptions {
   readonly args: readonly string[]
+  // The readyFile must not exist.
   readonly readyFile?: string
+  // The ruleFile must exist if presents
   readonly ruleFile?: string
 }
 
