@@ -512,7 +512,17 @@ namespace proxypp::http
     request.target(remote_request_header.target());
     for(const auto& field : remote_request_header)
       {
-        request.set(field.name(), field.value());
+        // cannot use field.name here because field.name is an enum. If
+        // encounter a non-existent enum value, it will throw a runtime
+        // exception.
+        if(field.name() != beast::http::field::unknown)
+          {
+            request.set(field.name(), field.value());
+          }
+        else
+          {
+            request.set(field.name_string(), field.value());
+          }
       }
 
     http_::request_serializer<http_::empty_body> serializer { request };
