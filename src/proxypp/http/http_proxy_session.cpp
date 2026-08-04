@@ -409,7 +409,7 @@ namespace proxypp::http
 
     for(auto& field : client_request_header)
       {
-        remote_request_header.set(field.name(), field.value());
+        remote_request_header.insert(field.name_string(), field.value());
       }
     // erase proxy related headers
     remote_request_header.erase(http_::field::proxy_connection);
@@ -510,19 +510,12 @@ namespace proxypp::http
     request.method(remote_request_header.method());
     request.version(remote_request_header.version());
     request.target(remote_request_header.target());
+    // cannot use field.name here because field.name is an enum. If
+    // encounter a non-existent enum value, it will throw a runtime
+    // exception.
     for(const auto& field : remote_request_header)
       {
-        // cannot use field.name here because field.name is an enum. If
-        // encounter a non-existent enum value, it will throw a runtime
-        // exception.
-        if(field.name() != beast::http::field::unknown)
-          {
-            request.set(field.name(), field.value());
-          }
-        else
-          {
-            request.set(field.name_string(), field.value());
-          }
+        request.insert(field.name_string(), field.value());
       }
 
     http_::request_serializer<http_::empty_body> serializer { request };
@@ -599,14 +592,7 @@ namespace proxypp::http
 
     for(auto& field : remote_response_header)
       {
-        if(field.name() != http_::field::unknown)
-          {
-            response.set(field.name(), field.value());
-          }
-        else
-          {
-            response.set(field.name_string(), field.value());
-          }
+        response.insert(field.name_string(), field.value());
       }
 
     http_::response_serializer<http_::buffer_body> serializer { response };

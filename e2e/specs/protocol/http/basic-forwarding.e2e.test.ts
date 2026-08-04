@@ -7,6 +7,8 @@ import { startExpressHttpServer } from '@/e2e/server/express-http-server'
 import { createHttpProxyClient } from '@/e2e/client/axios-client'
 import { startRawTcpServer } from '@/e2e/server/raw-tcp-server'
 import { setupProxyppProcess } from '@/e2e/process/proxypp-fixture'
+import { sendRawHttpRequest } from '@/e2e/client/raw-tcp-client'
+import { onTestFinished } from 'vitest'
 
 describe('http basic forwarding tests', () => {
   const { getProxypp } = setupProxyppProcess()
@@ -143,5 +145,119 @@ describe('http basic forwarding tests', () => {
       message: 'resource created',
       items: [1, 2, 3],
     })
+  })
+
+  test('duplicate request headers should be forwarded', async () => {
+    let receivedRequest = ''
+
+    const server = await startRawTcpServer((socket) => {
+      let buffer = ''
+      socket.setEncoding('utf-8')
+      socket.on('data', (chunk) => {
+        // Once set the socket encoding to UTF-8, the chunk receive here is a string, not a buffer.
+        buffer += chunk
+        const headerEnd = buffer.indexOf('\r\n\r\n')
+        if (headerEnd === -1) {
+          return
+        }
+        receivedRequest = buffer.substring(0, headerEnd)
+        socket.end(
+          [
+            'HTTP/1.1 200 OK',
+            'Content-Length: 0',
+            'Connection: Close',
+            '',
+            '',
+          ].join('\r\n'),
+        )
+      })
+    })
+
+    assert(server !== undefined)
+
+    const proxypp = getProxypp()
+    assert(proxypp !== undefined)
+
+    onTestFinished(async () => {
+      await server?.close()
+    })
+
+    const request = [
+      `GET http://${server.host}:${server.port}/echo HTTP/1.1`,
+      `Host: ${server.host}:${server.port}`,
+      `Accept: text/html`,
+      `Accept: application/json`,
+      'Connection: Close',
+      '',
+      '',
+    ].join('\r\n')
+
+    const response = await sendRawHttpRequest({
+      host: proxypp.host,
+      port: proxypp.port,
+      request,
+    })
+
+    expect(response).toContain('HTTP/1.1 200 OK')
+    const acceptValues = receivedRequest
+      .split('\r\n')
+      .filter((line) => line.toLowerCase().startsWith('accept:'))
+      .map((line) => line.substring(line.indexOf(':') + 1).trim())
+    expect(acceptValues).toStrictEqual(['text/html', 'application/json'])
+  })
+
+  test('duplicate response headers should be forwarded', async () => {
+    const server = await startRawTcpServer((socket) => {
+      let buffer = ''
+      socket.setEncoding('utf-8')
+      socket.on('data', (chunk) => {
+        buffer += chunk
+
+        const headerEnd = buffer.indexOf('\r\n\r\n')
+        if (headerEnd === -1) {
+          return
+        }
+        socket.end(
+          [
+            'HTTP/1.1 200 OK',
+            'Content-Length: 0',
+            'Accept: application/json',
+            'Accept: application/xml',
+            'Connection: Close',
+            '',
+            '',
+          ].join('\r\n'),
+        )
+      })
+    })
+
+    onTestFinished(async () => {
+      await server?.close()
+    })
+
+    const proxypp = getProxypp()
+    assert(proxypp !== undefined)
+
+    assert(server !== undefined)
+    const request = [
+      `GET http://${server.host}:${server.port}/echo HTTP/1.1`,
+      `Host: ${server.host}:${server.port}`,
+      'Connection: Close',
+      '',
+      '',
+    ].join('\r\n')
+
+    const response = await sendRawHttpRequest({
+      host: proxypp.host,
+      port: proxypp.port,
+      request,
+    })
+
+    expect(response).toContain('HTTP/1.1 200 OK')
+    const acceptValues = response
+      .split('\r\n')
+      .filter((line) => line.toLowerCase().startsWith('accept:'))
+      .map((line) => line.substring(line.indexOf(':') + 1).trim())
+    expect(acceptValues).toStrictEqual(['application/json', 'application/xml'])
   })
 })
