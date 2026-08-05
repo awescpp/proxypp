@@ -6,33 +6,44 @@
 import { execa } from 'execa'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
-import { parseArgs } from 'node:util'
 import { mkdir, rm } from 'node:fs/promises'
 import { glob } from 'glob'
 import open from 'open'
-import { platform } from 'node:os'
+import { Command } from 'commander'
 
 const scriptFile = fileURLToPath(import.meta.url)
 const scriptDir = dirname(scriptFile)
 const projectRoot = resolve(scriptDir, '..')
 
-function printUsage() {
-  console.log(`
-Generate a GCC/lcov coverage report for proxy++.
+const defaultPreset = 'linux-gcc-coverage-local'
+const defaultBrowser = 'firefox'
 
-Usage:
-  node scripts/coverage.mjs [options]
-
-Options:
-  --preset <name>  CMake preset to use
-                   Default: linux-gcc-coverage-local
-
-  --no-clean       Reuse the existing coverage build directory
-
-  --open           Open the generated HTML report
-
-  --help           Show this help message
-  `)
+function createProgram() {
+  return new Command()
+    .name('coverage')
+    .description('Generate a GCC/lcov coverage report for proxy++.')
+    .option(
+      '-p, --preset <name>',
+      'CMake configure/build/test preset',
+      defaultPreset,
+    )
+    .option('--no-clean', 'reuse the existing coverage build directory')
+    .option(
+      '-o, --open [browser]',
+      `open the generated HTML report (default browser: ${defaultBrowser})`,
+    )
+    .showHelpAfterError()
+    .addHelpText(
+      'after',
+      `
+Examples:
+  node scripts/coverage.mjs
+  node scripts/coverage.mjs --no-clean
+  node scripts/coverage.mjs --open
+  node scripts/coverage.mjs --open chromium
+  node scripts/coverage.mjs --preset linux-gcc-coverage-local
+`,
+    )
 }
 
 function printStep(message) {
@@ -72,30 +83,20 @@ async function ensureCoverageData(buildDir) {
   console.log(`Found ${files.length} runtime coverage data files`)
 }
 
-async function main() {
+async function openCoverageReport(reportFile, browserOption) {
+  // browserOption is a boolean or string
+  const browser = browserOption === true ? defaultBrowser : browserOption
+  await open(reportFile, { app: { name: browser } })
+}
+
+async function generateCoverageReport(options) {
   if (process.platform !== 'linux') {
     throw new Error('Coverage testing is supported only on Linux.')
   }
 
-  const { values } = parseArgs({
-    options: {
-      preset: { type: 'string', default: 'linux-gcc-coverage-local' },
-      'no-clean': { type: 'boolean', default: false },
-      open: { type: 'boolean', default: false },
-      help: { type: 'boolean', default: false },
-    },
-    strict: true,
-    allowPositionals: false,
-  })
-
-  if (values.help) {
-    printUsage()
-    return
-  }
-
-  const preset = values.preset
-  const shouldClean = !values['no-clean']
-  const shouldOpen = values.open
+  const preset = options.preset
+  const shouldClean = options.clean
+  const browserOption = options.open
 
   const buildDir = resolve(projectRoot, 'out', 'build', preset)
   const coverageDir = resolve(projectRoot, 'out', 'coverage', preset)
@@ -130,15 +131,12 @@ async function main() {
   await mkdir(coverageDir, { recursive: true })
 
   printStep(`Configuration preset: ${preset}`)
-
   await run('cmake', ['--preset', preset])
 
   printStep(`Building preset: ${preset}`)
-
-  await run(`cmake`, ['--build', '--preset', preset, '--parallel'])
+  await run('cmake', ['--build', '--preset', preset, '--parallel'])
 
   printStep('Capturing zero-coverage baseline')
-
   await run('lcov', [
     '--capture',
     '--initial',
@@ -147,22 +145,21 @@ async function main() {
     '--output-file',
     baseInfo,
     '--branch-coverage',
+    '--rc',
+    'geninfo_unexecuted_blocks=1',
     '--ignore-errors',
-    'mismatch',
+    'mismatch,mismatch',
   ])
 
   printStep('Resetting runtime coverage counters')
-
   await run('lcov', ['--zerocounters', '--directory', buildDir])
 
   printStep('Running unit tests')
-
   await run('ctest', ['--preset', preset])
 
   await ensureCoverageData(buildDir)
 
   printStep('Capturing test coverage')
-
   await run('lcov', [
     '--capture',
     '--directory',
@@ -170,12 +167,13 @@ async function main() {
     '--output-file',
     testInfo,
     '--branch-coverage',
+    '--rc',
+    'geninfo_unexecuted_blocks=1',
     '--ignore-errors',
-    'mismatch',
+    'mismatch,mismatch',
   ])
 
   printStep('Combining baseline and test coverage')
-
   await run('lcov', [
     '--add-tracefile',
     baseInfo,
@@ -187,7 +185,6 @@ async function main() {
   ])
 
   printStep('Filtering proxy++ production sources')
-
   await run('lcov', [
     '--extract',
     allInfo,
@@ -198,7 +195,6 @@ async function main() {
   ])
 
   printStep('Generating HTML coverage report')
-
   await run('genhtml', [
     finalInfo,
     '--output-directory',
@@ -219,10 +215,16 @@ async function main() {
   console.log('\nCoverage report generated successfully')
   console.log(`    ${reportFile}`)
 
-  if (shouldOpen) {
+  if (browserOption !== undefined) {
     printStep('Opening coverage report')
-    await open(reportFile, { app: { name: 'firefox' } })
+    await openCoverageReport(reportFile, browserOption)
   }
+}
+
+async function main() {
+  const program = createProgram()
+  await program.parseAsync(process.argv)
+  await generateCoverageReport(program.opts())
 }
 
 try {
