@@ -10,6 +10,11 @@
 #include <boost/url.hpp>
 #include <magic_enum/magic_enum.hpp>
 
+namespace
+{
+  const auto logger = proxypp::log::Get(proxypp::log::Module::http);
+}
+
 namespace proxypp::http
 {
   HttpProxySession::HttpProxySession(
@@ -26,7 +31,7 @@ namespace proxypp::http
   {
     while(co_await HandleOneExchange() == ExchangeResult::Continue)
       {
-        LOG_HTTP_DEBUG("keep-alive=true, handle next exchange");
+        logger->debug("keep-alive=true, handle next exchange");
       }
     Close();
   }
@@ -55,7 +60,7 @@ namespace proxypp::http
         co_return ExchangeResult::Close;
       }
 
-    LOG_HTTP_DEBUG("remote_info constructed");
+    logger->debug("remote_info constructed");
 
     if(!co_await EnsureRemoteConnected(*remote_info))
       {
@@ -72,14 +77,14 @@ namespace proxypp::http
       {
         auto apply_request_result = rule::http::ApplyRequest(
           *rule_engine_, *rule_http_config_, request_adapter);
-        LOG_HTTP_INFO("request.target: {}", request_adapter.Target());
+        logger->info("request.target: {}", request_adapter.Target());
         if(!apply_request_result)
           {
-            LOG_HTTP_ERROR("apply request failed");
+            logger->error("apply request failed");
           }
         else
           {
-            LOG_HTTP_INFO("apply request rule success");
+            logger->info("apply request rule success");
           }
       }
 
@@ -112,11 +117,11 @@ namespace proxypp::http
                                       request_adapter, response_adapter);
         if(!apply_response_result)
           {
-            LOG_HTTP_ERROR("apply response failed");
+            logger->error("apply response failed");
           }
         else
           {
-            LOG_HTTP_INFO("apply response rule success");
+            logger->info("apply response rule success");
           }
       }
 
@@ -180,8 +185,8 @@ namespace proxypp::http
       client_sock_, serializer, asio::as_tuple(asio::use_awaitable));
     if(ec_write)
       {
-        LOG_HTTP_ERROR("write CONNECT response to client failed, {}",
-                       ec_write.message());
+        logger->error("write CONNECT response to client failed, {}",
+                      ec_write.message());
         co_return false;
       }
     co_return true;
@@ -204,7 +209,7 @@ namespace proxypp::http
                                      ForwardPeer from_peer,
                                      ForwardPeer target_peer)
   {
-    // LOG_HTTP_DEBUG("tunnel {} -> {} started", from_peer.name,
+    // logger->debug("tunnel {} -> {} started", from_peer.name,
     //                target_peer.name);
     for(;;)
       {
@@ -214,13 +219,13 @@ namespace proxypp::http
               = co_await ReadSomeFromPeer(read_buffer, from_peer);
             if(!read_result.has_value())
               {
-                // LOG_HTTP_ERROR("tunnel {} -> {} read failed", from_peer.name,
+                // logger->error("tunnel {} -> {} read failed", from_peer.name,
                 //                target_peer.name);
                 break;
               }
             if(read_result->eof)
               {
-                // LOG_HTTP_DEBUG("tunnel {} -> {} eof", from_peer.name,
+                // logger->debug("tunnel {} -> {} eof", from_peer.name,
                 //                target_peer.name);
                 break;
               }
@@ -230,13 +235,13 @@ namespace proxypp::http
           = co_await WriteToPeer(read_buffer, target_peer, bytes_to_write);
         if(!bytes_written.has_value())
           {
-            // LOG_HTTP_ERROR("tunnel {} -> {} write failed", from_peer.name,
+            // logger->error("tunnel {} -> {} write failed", from_peer.name,
             //                target_peer.name);
             break;
           }
       }
 
-    // LOG_HTTP_DEBUG("tunnel {} -> {} stopped", from_peer.name,
+    // logger->debug("tunnel {} -> {} stopped", from_peer.name,
     //                target_peer.name);
 
     Close();
@@ -268,19 +273,19 @@ namespace proxypp::http
       {
         if(ec == asio::error::eof || ec == beast::http::error::end_of_stream)
           {
-            LOG_HTTP_DEBUG(
+            logger->debug(
               "client closed connection before sending request header");
           }
         else
           {
-            LOG_HTTP_ERROR("read client request header error, {}",
-                           ec.message());
+            logger->error("read client request header error, {}",
+                          ec.message());
           }
 
         co_return std::nullopt;
       }
 
-    LOG_HTTP_DEBUG("read client request header, {} bytes", bytes_read);
+    logger->debug("read client request header, {} bytes", bytes_read);
 
     co_return client_request_parser.get().base();
   }
@@ -304,19 +309,19 @@ namespace proxypp::http
     auto authority_result = boost::urls::parse_authority(target);
     if(!authority_result)
       {
-        LOG_HTTP_ERROR("invalid CONNECT authority-form: {}", target);
+        logger->error("invalid CONNECT authority-form: {}", target);
         return std::nullopt;
       }
 
     if(authority_result->host().empty())
       {
-        LOG_HTTP_ERROR("CONNECT host is empty");
+        logger->error("CONNECT host is empty");
         return std::nullopt;
       }
 
     if(authority_result->port().empty())
       {
-        LOG_HTTP_ERROR("CONNECT port is empty: {}", target);
+        logger->error("CONNECT port is empty: {}", target);
         return std::nullopt;
       }
 
@@ -326,8 +331,8 @@ namespace proxypp::http
     remote_info.port = authority_result->port();
     remote_info.forward_target.clear();
 
-    LOG_HTTP_DEBUG("parse CONNECT remote_info, host={}, port={}",
-                   remote_info.host, remote_info.port);
+    logger->debug("parse CONNECT remote_info, host={}, port={}",
+                  remote_info.host, remote_info.port);
 
     return remote_info;
   }
@@ -342,18 +347,18 @@ namespace proxypp::http
         RemoteInfo remote_info;
         if(absolute_form_result->scheme() != "http")
           {
-            LOG_HTTP_ERROR("unsupported scheme: {}",
-                           absolute_form_result->scheme());
+            logger->error("unsupported scheme: {}",
+                          absolute_form_result->scheme());
             return std::nullopt;
           }
         if(absolute_form_result->encoded_target().empty())
           {
-            LOG_HTTP_ERROR("empty target");
+            logger->error("empty target");
             return std::nullopt;
           }
         if(absolute_form_result->host().empty())
           {
-            LOG_HTTP_ERROR("host is empty");
+            logger->error("host is empty");
             return std::nullopt;
           }
 
@@ -376,24 +381,24 @@ namespace proxypp::http
             remote_info.forward_target
               += absolute_form_result->encoded_query();
           }
-        LOG_HTTP_DEBUG("parse remote_info");
+        logger->debug("parse remote_info");
         return remote_info;
       }
     if(auto origin_form_result
        = boost::urls::parse_origin_form(client_request_header.target()))
       {
-        LOG_HTTP_ERROR("origin form not implement");
+        logger->error("origin form not implement");
         return std::nullopt;
       }
     if(auto authority_form_result
        = boost::urls::parse_authority(client_request_header.target()))
       {
-        LOG_HTTP_ERROR("authority form not implement");
+        logger->error("authority form not implement");
         return std::nullopt;
       }
     if(client_request_header.target() == "*")
       {
-        LOG_HTTP_ERROR("* form not implement");
+        logger->error("* form not implement");
         return std::nullopt;
       }
     return std::nullopt;
@@ -427,28 +432,28 @@ namespace proxypp::http
   {
     tcp::resolver resolver { client_sock_.get_executor() };
 
-    LOG_HTTP_DEBUG("before resolve");
+    logger->debug("before resolve");
 
     const auto [ec, endpoints] = co_await resolver.async_resolve(
       remote_info.host, remote_info.port, asio::as_tuple(asio::use_awaitable));
 
-    LOG_HTTP_DEBUG("after resolve");
+    logger->debug("after resolve");
 
     if(ec)
       {
-        LOG_HTTP_ERROR("resolve {}:{} failed, {}", remote_info.host,
-                       remote_info.port, ec.message());
+        logger->error("resolve {}:{} failed, {}", remote_info.host,
+                      remote_info.port, ec.message());
         co_return std::nullopt;
       }
     if(endpoints.empty())
       {
-        LOG_HTTP_ERROR("no endpoints resolved for {}:{}", remote_info.host,
-                       remote_info.port);
+        logger->error("no endpoints resolved for {}:{}", remote_info.host,
+                      remote_info.port);
         co_return std::nullopt;
       }
 
-    LOG_HTTP_DEBUG("resolve {}:{}, {} endpoints found", remote_info.host,
-                   remote_info.port, endpoints.size());
+    logger->debug("resolve {}:{}, {} endpoints found", remote_info.host,
+                  remote_info.port, endpoints.size());
 
     co_return endpoints;
   }
@@ -461,7 +466,7 @@ namespace proxypp::http
     boost::ignore_unused(sock_ignored);
     if(ec)
       {
-        LOG_HTTP_ERROR("connect remote failed, {}", ec.message());
+        logger->error("connect remote failed, {}", ec.message());
         co_return false;
       }
     co_return true;
@@ -474,15 +479,15 @@ namespace proxypp::http
        && remote_state_.host == remote_info.host
        && remote_state_.port == remote_info.port)
       {
-        LOG_HTTP_DEBUG("reuse remote_info");
+        logger->debug("reuse remote_info");
         co_return true;
       }
 
-    LOG_HTTP_DEBUG("before close remote_sock");
+    logger->debug("before close remote_sock");
 
     CloseRemote();
 
-    LOG_HTTP_DEBUG("...");
+    logger->debug("...");
 
     auto endpoints = co_await ResolveRemote(remote_info);
     if(!endpoints.has_value())
@@ -523,8 +528,8 @@ namespace proxypp::http
       remote_sock_, serializer, asio::as_tuple(asio::use_awaitable));
     if(ec)
       {
-        LOG_HTTP_ERROR("write request header to remote failed, {}",
-                       ec.message());
+        logger->error("write request header to remote failed, {}",
+                      ec.message());
         co_return false;
       }
     co_return true;
@@ -572,12 +577,12 @@ namespace proxypp::http
       asio::as_tuple(asio::use_awaitable));
     if(ec_read)
       {
-        LOG_HTTP_ERROR("read remote response header failed, {}",
-                       ec_read.message());
+        logger->error("read remote response header failed, {}",
+                      ec_read.message());
         co_return std::nullopt;
       }
 
-    LOG_HTTP_DEBUG("read remote response header, {} bytes", bytes_read);
+    logger->debug("read remote response header, {} bytes", bytes_read);
 
     co_return remote_response_parser.get().base();
   }
@@ -601,8 +606,8 @@ namespace proxypp::http
     boost::ignore_unused(bytes_written);
     if(ec_write)
       {
-        LOG_HTTP_ERROR("write response header to client failed, {}",
-                       ec_write.message());
+        logger->error("write response header to client failed, {}",
+                      ec_write.message());
         co_return false;
       }
     co_return true;
@@ -628,14 +633,14 @@ namespace proxypp::http
         co_return co_await ForwardResponseBodyByCloseDelimited();
 
       case ResponseBodyFraming::Tunnel:
-        LOG_HTTP_ERROR("tunnel forward is not supported currently");
+        logger->error("tunnel forward is not supported currently");
         break;
 
       case ResponseBodyFraming::None: co_return true;
       }
 
-    LOG_HTTP_ERROR("unexpected framing: {}",
-                   magic_enum::enum_name(response_body_info.framing));
+    logger->error("unexpected framing: {}",
+                  magic_enum::enum_name(response_body_info.framing));
 
     co_return false;
   }
@@ -725,25 +730,25 @@ namespace proxypp::http
         if(ec_read == asio::error::eof)
           {
             buffer.commit(bytes_read);
-            LOG_HTTP_DEBUG("read eof from {}, read {} bytes", from_peer.name,
-                           bytes_read);
+            logger->debug("read eof from {}, read {} bytes", from_peer.name,
+                          bytes_read);
             co_return ReadSomeResult { .bytes_read = bytes_read, .eof = true };
           }
 
         if(ec_read == asio::error::operation_aborted)
           {
             buffer.commit(bytes_read);
-            LOG_HTTP_DEBUG("read from {}, operation aborted", from_peer.name);
+            logger->debug("read from {}, operation aborted", from_peer.name);
             co_return std::nullopt;
           }
 
-        LOG_HTTP_ERROR("read from {} failed, {}", from_peer.name,
-                       ec_read.message());
+        logger->error("read from {} failed, {}", from_peer.name,
+                      ec_read.message());
         co_return std::nullopt;
       }
     if(bytes_read == 0)
       {
-        LOG_HTTP_ERROR(
+        logger->error(
           "read 0 bytes from {}, connection may be closed prematurely");
         co_return std::nullopt;
       }
@@ -763,15 +768,15 @@ namespace proxypp::http
       asio::as_tuple(asio::use_awaitable));
     if(ec_write)
       {
-        LOG_HTTP_ERROR("write to {} failed, {}", target_peer.name,
-                       ec_write.message());
+        logger->error("write to {} failed, {}", target_peer.name,
+                      ec_write.message());
         co_return std::nullopt;
       }
 
     if(bytes_written != bytes_to_write)
       {
-        LOG_HTTP_ERROR("write data to {} incomplete, expected {}, actual {}",
-                       target_peer.name, bytes_to_write, bytes_written);
+        logger->error("write data to {} incomplete, expected {}, actual {}",
+                      target_peer.name, bytes_to_write, bytes_written);
         co_return std::nullopt;
       }
 
@@ -838,8 +843,8 @@ namespace proxypp::http
               if(chunk_size > std::numeric_limits<std::size_t>::max() - 2)
                 {
                   // TODO: how to build a num that larger than std::size_t ?
-                  LOG_HTTP_ERROR("data to write that is too large {}",
-                                 chunk_size);
+                  logger->error("data to write that is too large {}",
+                                chunk_size);
                   co_return false;
                 }
               chunk_bytes_remaining = chunk_size + 2;
@@ -971,13 +976,13 @@ namespace proxypp::http
                || ec == asio::error::operation_aborted
                || ec == asio::error::connection_reset)
               {
-                LOG_HTTP_DEBUG("shutdown remote socket ignored, {}",
-                               ec.message());
+                logger->debug("shutdown remote socket ignored, {}",
+                              ec.message());
               }
             else
               {
-                LOG_HTTP_ERROR("shutdown remote socket failed, {}",
-                               ec.message());
+                logger->error("shutdown remote socket failed, {}",
+                              ec.message());
               }
             ec.clear();
           }
@@ -986,11 +991,11 @@ namespace proxypp::http
 
         if(ec)
           {
-            LOG_HTTP_ERROR("close remote socket failed, {}", ec.message());
+            logger->error("close remote socket failed, {}", ec.message());
           }
         else
           {
-            LOG_HTTP_DEBUG("close remote socket");
+            logger->debug("close remote socket");
           }
         ResetRemoteState();
       }
@@ -1008,13 +1013,13 @@ namespace proxypp::http
                || ec == asio::error::operation_aborted
                || ec == asio::error::connection_reset)
               {
-                LOG_HTTP_DEBUG("shutdown client socket ignored, {}",
-                               ec.message());
+                logger->debug("shutdown client socket ignored, {}",
+                              ec.message());
               }
             else
               {
-                LOG_HTTP_ERROR("shutdown client socket failed, {}",
-                               ec.message());
+                logger->error("shutdown client socket failed, {}",
+                              ec.message());
               }
             ec.clear();
           }
@@ -1022,11 +1027,11 @@ namespace proxypp::http
         client_sock_.socket().close(ec);
         if(ec)
           {
-            LOG_HTTP_ERROR("close client socket failed, {}", ec.message());
+            logger->error("close client socket failed, {}", ec.message());
           }
         else
           {
-            LOG_HTTP_DEBUG("close client socket");
+            logger->debug("close client socket");
           }
       }
   }
@@ -1036,7 +1041,7 @@ namespace proxypp::http
     remote_state_.host = "";
     remote_state_.port = "";
     remote_state_.connected = false;
-    LOG_HTTP_DEBUG("reset remote state");
+    logger->debug("reset remote state");
   }
   void HttpProxySession::Close()
   {
@@ -1045,7 +1050,7 @@ namespace proxypp::http
         return;
       }
     closed_ = true;
-    LOG_HTTP_DEBUG("close http proxy session");
+    logger->debug("close http proxy session");
 
     CloseRemote();
     CloseClient();

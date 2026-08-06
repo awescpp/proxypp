@@ -4,96 +4,101 @@
  */
 
 #include "log.h"
-
+#include <array>
+#include <filesystem>
 #include <magic_enum/magic_enum.hpp>
+#include <mutex>
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 namespace proxypp::log
 {
-  // Anonymous namespace: used only inside log.cpp, hidden from external code,
-  // and not visible during linking.
   namespace
   {
-    std::vector<spdlog::sink_ptr> &MakeSinks()
-    {
-      static std::vector<spdlog::sink_ptr> sinks;
+    constexpr auto kConsolePattern
+      = "[%H:%M:%S.%e] [%8t] [%-4n] [%^%-6l%$] %v";
+    constexpr auto kFilePattern
+      = "[%Y-%m-%d %H:%M:%S.%e] [%8t] [%-4n] [%-6l] %v";
 
-      if(sinks.empty())
+    constexpr auto kModuleCount = magic_enum::enum_count<Module>();
+
+    using LoggerArray
+      = std::array<std::shared_ptr<spdlog::logger>, kModuleCount>;
+
+    std::shared_ptr<spdlog::sinks::stdout_color_sink_mt> MakeConsoleSink()
+    {
+      auto sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+      sink->set_pattern(kConsolePattern);
+      return sink;
+    }
+
+    std::shared_ptr<spdlog::sinks::rotating_file_sink_mt>
+    MakeRotateFileSink(const std::filesystem::path& log_dir, int max_file_size,
+                       int max_file_count)
+    {
+      const auto file_sink
+        = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
+          (log_dir / "proxypp.log").string(), max_file_size, max_file_count);
+      file_sink->set_pattern(kFilePattern);
+      return file_sink;
+    }
+
+    LoggerArray MakeLoggers()
+    {
+      const auto console_sink = MakeConsoleSink();
+      LoggerArray result {};
+      for(const auto module : magic_enum::enum_values<Module>())
         {
-          auto console_sink
-            = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-          console_sink->set_pattern("[%H:%M:%S.%e] [%n] [%^%l%$] [%s:%#] %v");
-
-          const auto log_file = "logs/proxypp.log";
-          constexpr auto file_max_size = 1024 * 1024 * 10;
-          constexpr auto max_file_num = 5;
-          auto file_sink
-            = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-              log_file, file_max_size, max_file_num);
-          file_sink->set_pattern(
-            "[%Y-%m-%d %H:%M:%S.%e] [%n] [%l] [%t] [%s:%#] %v");
-
-          sinks.push_back(console_sink);
-          // TODO: we all file_sink just later
-          //  sinks.push_back(file_sink);
+          const auto index = magic_enum::enum_index(module);
+          const auto name = std::string { magic_enum::enum_name(module) };
+          auto logger = std::make_shared<spdlog::logger>(name, console_sink);
+          logger->set_level(spdlog::level::info);
+          logger->flush_on(spdlog::level::warn);
+          spdlog::register_logger(logger);
+          result[*index] = std::move(logger);
         }
-
-      return sinks;
+      return result;
     }
 
-    std::shared_ptr<spdlog::logger> MakeLogger(Module module)
+    LoggerArray& Loggers()
     {
-      auto sinks = MakeSinks();
-      std::unordered_map<Module, std::string> map
-        = {{Module::core, "core"}, {Module::http, "http"}};
-      assert(map.contains(module));
-      auto logger = std::make_shared<spdlog::logger>(
-        map[module], sinks.begin(), sinks.end());
-      logger->set_level(spdlog::level::info); // default level
-      logger->flush_on(spdlog::level::warn);
-      spdlog::register_logger(logger);
-      return logger;
+      static auto loggers = MakeLoggers();
+      return loggers;
     }
-  } // namespace
+  }
 
-  namespace detail
+  void Init(const std::filesystem::path& log_dir)
   {
-    std::shared_ptr<spdlog::logger> core()
-    {
-      static auto logger = MakeLogger(Module::core);
-      return logger;
-    }
+    static std::once_flag init_flag;
+    std::call_once(init_flag, [&] {
+      constexpr auto kMaxFileSize = 10 * 1024 * 1024;
+      constexpr auto kMaxFileCount = 5;
+      for(const auto& logger : Loggers())
+        {
+          const auto file_sink
+            = MakeRotateFileSink(log_dir, kMaxFileSize, kMaxFileCount);
+          logger->sinks().push_back(file_sink);
+        }
+    });
+  }
 
-    std::shared_ptr<spdlog::logger> http()
-    {
-      static auto logger = MakeLogger(Module::http);
-      return logger;
-    }
-
-  } // namespace detail
-
-  void Init()
+  std::shared_ptr<spdlog::logger> Get(Module module)
   {
-    detail::core();
-    detail::http();
+    const auto index = magic_enum::enum_index(module);
+    return Loggers()[*index];
   }
 
   void SetLevel(Module module, spdlog::level::level_enum level)
   {
-    switch(module)
-      {
-      case Module::core: detail::core()->set_level(level); return;
-      case Module::http: detail::http()->set_level(level); return;
-      }
+    Get(module)->set_level(level);
   }
 
   void SetAllLevels(spdlog::level::level_enum level)
   {
-    for(auto module : magic_enum::enum_values<Module>())
+    for(const auto& logger : Loggers())
       {
-        SetLevel(module, level);
+        logger->set_level(level);
       }
   }
 
-} // namespace proxypp::log
+}

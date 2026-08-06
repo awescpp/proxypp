@@ -20,7 +20,7 @@ namespace
 {
   struct GlobalOpts
   {
-    bool verbose = false;
+    std::string log_level;
   };
 
   struct HttpOpts
@@ -54,23 +54,28 @@ namespace
   {
     app.name("proxy++");
 
-    app.add_flag("-v,--verbose", opts.global.verbose, "run in verbose mode");
+    app.add_option("--log-level", opts.global.log_level, "Set log level")
+      ->default_val(opts.global.log_level)
+      ->check(CLI::IsMember(
+        { "trace", "debug", "info", "error", "critical", "off" }));
+
     app.set_version_flag("-V,--version", "V1.0.0");
 
-    CLI::App* http = app.add_subcommand("http", "start http proxy");
-    http->add_option("-b,--bind", opts.http.bind, "bind address");
-    http->add_option("-p,--port", opts.http.port, "bind port")
+    CLI::App* http_command = app.add_subcommand("http", "start http proxy");
+    http_command->fallthrough();
+    http_command->add_option("-b,--bind", opts.http.bind, "bind address");
+    http_command->add_option("-p,--port", opts.http.port, "bind port")
       ->check(CLI::Range(0, 65535));
-    http
+    http_command
       ->add_option("--ready-file", opts.http.ready_file,
                    "Path to a file created after proxy++ starts listening")
       ->check(CLI::NonexistentPath);
     CLI::Option* rule_file_opt
-      = http
+      = http_command
           ->add_option("-r,--rule-file", opts.http.rule_file, "rule file path")
           ->check(CLI::ExistingFile);
     app.require_subcommand(1);
-    return { .http = http, .rule_file_opt = rule_file_opt };
+    return { .http = http_command, .rule_file_opt = rule_file_opt };
   }
 
   proxypp::Result<proxypp::rule::Config>
@@ -145,10 +150,6 @@ int main(int argc, char** argv)
   SetConsoleOutputCP(936);
 #endif
 
-  // init loggers
-  proxypp::log::Init();
-  proxypp::log::SetAllLevels(spdlog::level::debug);
-
   CLI::App app;
   argv = app.ensure_utf8(argv);
 
@@ -156,6 +157,12 @@ int main(int argc, char** argv)
   auto cli_handlers = ConfigureCli(app, opts);
 
   CLI11_PARSE(app, argc, argv);
+
+  proxypp::log::Init("./logs");
+  proxypp::log::SetAllLevels(spdlog::level::from_str(opts.global.log_level));
+
+  const auto app_logger = proxypp::log::Get(proxypp::log::Module::app);
+  app_logger->trace("set log level to {}", opts.global.log_level);
 
   const auto rule_file_path = proxypp::helper::cli::ResolveRuleFilePath(
     *cli_handlers.rule_file_opt, opts.http.rule_file);

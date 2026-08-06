@@ -7,6 +7,11 @@
 #include "proxypp/http/http_proxy_session.h"
 #include "proxypp/log/log.h"
 
+namespace
+{
+  const auto logger = proxypp::log::Get(proxypp::log::Module::core);
+}
+
 proxypp::core::TcpServer::TcpServer(asio::any_io_executor ex,
                                     TcpServerOptions options)
     : acceptor_(ex), options_(std::move(options))
@@ -67,7 +72,7 @@ proxypp::core::TcpServer::Start()
   const auto address = acceptor_.local_endpoint().address().to_string();
   const auto port = acceptor_.local_endpoint().port();
 
-  LOG_CORE_INFO("proxy++ running on {}:{}", address, port);
+  logger->info("proxy++ running on {}:{}", address, port);
 
   return ListenEndpoint { .address = address, .port = port };
 }
@@ -86,12 +91,12 @@ void proxypp::core::TcpServer::StartAccept()
               asio::as_tuple(asio::use_awaitable));
           if(accept_ec)
             {
-              LOG_CORE_ERROR("accept connection error, {}",
-                             accept_ec.message());
+              logger->error("accept connection error, {}",
+                            accept_ec.message());
               continue;
             }
 
-          LOG_CORE_DEBUG("accept a connection from {}:{}");
+          logger->debug("accept a connection from {}:{}");
 
           auto http_proxy_session = std::make_shared<http::HttpProxySession>(
             std::move(client_sock), self->rule_engine(),
@@ -103,6 +108,7 @@ void proxypp::core::TcpServer::StartAccept()
               co_await http_proxy_session->Run();
             },
             [http_proxy_session](std::exception_ptr e) {
+              const auto http_logger = log::Get(log::Module::http);
               if(!e)
                 {
                   return;
@@ -113,18 +119,19 @@ void proxypp::core::TcpServer::StartAccept()
                 }
               catch(const boost::system::system_error& ex)
                 {
-                  LOG_HTTP_ERROR("unhandled system error in HttpProxySession, "
-                                 "code={}, message={}",
-                                 ex.code().value(), ex.code().message());
+                  http_logger->error(
+                    "unhandled system error in HttpProxySession, "
+                    "code={}, message={}",
+                    ex.code().value(), ex.code().message());
                 }
               catch(const std::exception& ex)
                 {
-                  LOG_HTTP_ERROR("unhandled exception in HttpProxySession, {}",
-                                 ex.what());
+                  http_logger->error(
+                    "unhandled exception in HttpProxySession, {}", ex.what());
                 }
               catch(...)
                 {
-                  LOG_HTTP_ERROR("unknown exception in HttpProxySession");
+                  http_logger->error("unknown exception in HttpProxySession");
                 }
             });
         }
@@ -141,11 +148,11 @@ void proxypp::core::TcpServer::StartAccept()
         }
       catch(const std::exception& ex)
         {
-          LOG_CORE_ERROR("accept coroutine terminated, {}", ex.what());
+          logger->error("accept coroutine terminated, {}", ex.what());
         }
       catch(...)
         {
-          LOG_CORE_ERROR("accept coroutine terminated by unknown exception");
+          logger->error("accept coroutine terminated by unknown exception");
         }
     });
 }
