@@ -154,7 +154,7 @@ namespace proxypp::script::qjs::test
   BOOST_AUTO_TEST_CASE(eval_with_invalid_context_should_return_invalid_argument)
   {
     qjs::Context moved { std::move(context) };
-    BOOST_REQUIRE(moved.NativeHandle() != nullptr);
+    BOOST_REQUIRE(moved.GetNativeHandle() != nullptr);
 
     auto value = qjs::Evaluator::Eval(context, "1 + 1");
     RequireErrorCode(value, Errc::InvalidContext);

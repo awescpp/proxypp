@@ -4,8 +4,14 @@
  */
 
 #include "proxypp/script/qjs/runtime.h"
+#include "proxypp/log/log.h"
 #include "proxypp/script/qjs/error.h"
 #include <quickjs.h>
+
+namespace
+{
+  const auto logger = proxypp::log::Get(proxypp::log::Module::qjs);
+}
 
 proxypp::Result<proxypp::script::qjs::Runtime>
 proxypp::script::qjs::Runtime::Create()
@@ -13,13 +19,22 @@ proxypp::script::qjs::Runtime::Create()
   JSRuntime* runtime = JS_NewRuntime();
   if(runtime == nullptr)
     {
-      return proxypp::Unexpected(Error{Errc::CreateRuntimeFailed});
+      logger->error("failed to create QuickJS runtime");
+      return proxypp::Unexpected(Error { Errc::CreateRuntimeFailed });
     }
-  return Runtime{runtime};
+
+  logger->trace(R"(QuickJS runtime created: address="{:p}")",
+                static_cast<void*>(runtime));
+
+  return Runtime { runtime };
 }
 
-JSRuntime* proxypp::script::qjs::Runtime::NativeHandle() noexcept
+JSRuntime* proxypp::script::qjs::Runtime::GetNativeHandle() const noexcept
 {
+  if(runtime_ == nullptr)
+    {
+      logger->error("invalid QuickJS runtime: reason=\"nullptr\"");
+    }
   return runtime_;
 }
 
@@ -33,8 +48,14 @@ proxypp::script::qjs::Runtime::~Runtime()
     {
       return;
     }
+
+  auto* runtime = runtime_;
+
   JS_FreeRuntime(runtime_);
   runtime_ = nullptr;
+
+  logger->trace(R"(QuickJS runtime destroyed: address="{:p}")",
+                static_cast<void*>(runtime));
 }
 
 proxypp::script::qjs::Runtime::Runtime(Runtime&& other) noexcept

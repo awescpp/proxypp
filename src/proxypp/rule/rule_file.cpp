@@ -7,7 +7,13 @@
 #include "proxypp/helper/file_helper.h"
 #include "proxypp/helper/json_helper.h"
 #include "proxypp/helper/json_schema_helper.h"
+#include "proxypp/log/log.h"
 #include <string_view>
+
+namespace
+{
+  const auto logger = proxypp::log::Get(proxypp::log::Module::rule);
+}
 
 namespace proxypp::rule
 {
@@ -209,6 +215,8 @@ namespace proxypp::rule
     auto read_file = helper::file::ReadTextFile(file_path);
     if(!read_file)
       {
+        logger->error(R"(failed to read rule file: path="{}", error="{}")",
+                      file_path.string(), read_file.error().message());
         return Unexpected(read_file.error());
       }
 
@@ -216,20 +224,32 @@ namespace proxypp::rule
       = helper::schema::ValidateJsonBySchema(kRuleSchema, *read_file);
     if(!validation)
       {
+        logger->error(
+          R"(failed to validate rule file against JSON schema: path="{}", error="{}")",
+          file_path.string(), validation.error().message());
         return Unexpected(validation.error());
       }
 
     auto parse_json = helper::json::ParseJson(*read_file);
     if(!parse_json)
       {
+        logger->error(
+          R"(failed to parse rule file as JSON: path="{}", error="{}")",
+          file_path.string(), parse_json.error().message());
         return Unexpected(parse_json.error());
       }
 
     auto conversion = helper::json::Convert<rule::Config>(*parse_json);
     if(!conversion)
       {
+        logger->error(
+          R"(failed to build rule configuration: path="{}", error="{}")",
+          file_path.string(), conversion.error().message());
         return Unexpected(conversion.error());
       }
+
+    logger->info(R"(rule file loaded: path="{}")", file_path.string());
+
     return *conversion;
   }
 

@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 
 namespace proxypp::script::qjs
 {
@@ -29,6 +30,12 @@ namespace proxypp::script::qjs
 
     Value(const Value& other) = delete;
     Value& operator=(const Value& other) = delete;
+
+    static decltype(Unexpected(std::declval<Error>()))
+    HandleInvalidValue(std::string_view message, std::string_view reason);
+
+    static decltype(Unexpected(std::declval<Error>()))
+    HandleContextMismatch(std::string_view message);
 
     /**
      * 获取指定 QuickJS 上下文的全局对象。

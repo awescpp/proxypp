@@ -4,15 +4,19 @@
  */
 
 #include "proxypp/rule/http/action_executor.h"
+#include "proxypp/log/log.h"
 #include "proxypp/rule/error.h"
 #include "proxypp/rule/op.h"
 #include "request_adapter.h"
 #include "response_adapter.h"
 #include <boost/algorithm/string.hpp>
+#include <magic_enum/magic_enum.hpp>
 #include <unordered_set>
 
 namespace
 {
+  const auto logger = proxypp::log::Get(proxypp::log::Module::rule);
+
   const std::unordered_set<std::string> kUnsupportedHeaders = {
     // Body framing
     "content-length", "transfer-encoding", "te", "trailer",
@@ -55,6 +59,9 @@ proxypp::rule::http::ExecuteRequestAction(const Action& action,
       if(kUnsupportedHeaders.contains(
            boost::algorithm::to_lower_copy(data.name)))
         {
+          logger->error(
+            R"(failed to execute action, modifying unsupported http header, name="{}")",
+            data.name);
           return Unexpected(
             Error { Errc::InvalidAction,
                     std::format("modifying header '{}' is not supported",
@@ -68,6 +75,10 @@ proxypp::rule::http::ExecuteRequestAction(const Action& action,
       if(kUnsupportedHeaders.contains(
            boost::algorithm::to_lower_copy(data.name)))
         {
+          logger->error(
+            R"(failed to execute action, modifying unsupported http header, name="{}")",
+            data.name);
+
           return Unexpected(
             Error { Errc::InvalidAction,
                     std::format("modifying header '{}' is not supported",

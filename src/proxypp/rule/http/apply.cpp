@@ -4,16 +4,22 @@
  */
 
 #include "proxypp/rule/http/apply.h"
+#include "proxypp/log/log.h"
 #include "proxypp/rule/http/action_executor.h"
 #include "proxypp/rule/http/context_injector.h"
 #include "proxypp/rule/match_context.h"
+
+namespace
+{
+  const auto logger = proxypp::log::Get(proxypp::log::Module::rule);
+}
 
 proxypp::Result<void>
 proxypp::rule::http::ApplyRequest(RuleEngine& engine,
                                   const Config& http_config,
                                   RequestAdapter& request_adapter)
 {
-  if(!http_config.rules)
+  if(!http_config.rules || http_config.rules->empty())
     {
       return {};
     }

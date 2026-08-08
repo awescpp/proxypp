@@ -4,6 +4,7 @@
  */
 
 #include "proxypp/rule/http/context_injector.h"
+#include "proxypp/log/log.h"
 #include "proxypp/rule/match_context.h"
 #include "proxypp/script/qjs/object_builder.h"
 #include "proxypp/script/qjs/value.h"
@@ -13,6 +14,11 @@
 #include <type_traits>
 
 namespace qjs = proxypp::script::qjs;
+
+namespace
+{
+  const auto logger = proxypp::log::Get(proxypp::log::Module::rule);
+}
 
 namespace proxypp::rule::http
 {
@@ -112,7 +118,18 @@ namespace proxypp::rule::http
         return Unexpected(ctx_obj.error());
       }
 
-    return context.AddObject("ctx", std::move(*ctx_obj));
+    auto inject_result = context.AddObject("ctx", std::move(*ctx_obj));
+
+    if(!inject_result)
+      {
+        // There's no need to print the error log here; `context.AddObject`
+        // will log the corresponding error anyway.
+        return inject_result;
+      }
+
+    logger->trace("HTTP request context injected");
+
+    return inject_result;
   }
 
   Result<void> InjectResponseContext(MatchContext& context,
@@ -142,13 +159,23 @@ namespace proxypp::rule::http
     ctx_obj_builder->SetString("phase", "response")
       .SetObject("request", std::move(*request_obj))
       .SetObject("response", std::move(*response_obj));
+
     auto ctx_obj = std::move(*ctx_obj_builder).Build();
     if(!ctx_obj.has_value())
       {
         return Unexpected(ctx_obj.error());
       }
 
-    return context.AddObject("ctx", std::move(*ctx_obj));
+    auto inject_result = context.AddObject("ctx", std::move(*ctx_obj));
+
+    if(!inject_result)
+      {
+        return inject_result;
+      }
+
+    logger->trace("HTTP response context injected");
+
+    return inject_result;
   }
 
 }

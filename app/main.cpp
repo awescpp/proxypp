@@ -20,7 +20,7 @@ namespace
 {
   struct GlobalOpts
   {
-    std::string log_level;
+    std::string log_level = "info";
   };
 
   struct HttpOpts
@@ -102,10 +102,12 @@ namespace
   }
 
   proxypp::Result<void>
-  WriteReadyFile(const std::filesystem::path& read_file, std::string_view host,
-                 std::uint16_t port)
+  WriteReadyFile(const std::filesystem::path& ready_file,
+                 std::string_view host, std::uint16_t port)
   {
-    auto temporary_file = read_file;
+    const auto app_logger = proxypp::log::Get(proxypp::log::Module::app);
+
+    auto temporary_file = ready_file;
     temporary_file += ".tmp";
 
     {
@@ -113,6 +115,9 @@ namespace
                              std::ios::binary | std::ios::trunc };
       if(!output)
         {
+          app_logger->error("failed to open ready file: path=\"{}\"",
+                            temporary_file.string());
+
           return proxypp::Unexpected(proxypp::Error(
             proxypp::Errc::InternalError, temporary_file.string()));
         }
@@ -125,6 +130,8 @@ namespace
       output.flush();
       if(!output)
         {
+          app_logger->error("failed to write ready file: path=\"{}\"",
+                            temporary_file.string());
           return proxypp::Unexpected(proxypp::Error {
             proxypp::Errc::FileOperationFailed,
             std::format("write file {} failed", temporary_file.string()) });
@@ -132,11 +139,18 @@ namespace
     }
     try
       {
-        std::filesystem::rename(temporary_file, read_file);
+        std::filesystem::rename(temporary_file, ready_file);
+        app_logger->info("ready file created: path=\"{}\"",
+                         std::filesystem::absolute(ready_file).string());
+
         return {};
       }
     catch(const std::exception& e)
       {
+        app_logger->error(
+          R"(failed to rename file: "{}" -> "{}", message="{}" )",
+          temporary_file.string(), ready_file.string(), e.what());
+
         return proxypp::Unexpected(
           proxypp::Error(proxypp::Errc::InternalError,
                          std::format("rename file failed, {}", e.what())));
@@ -162,7 +176,7 @@ int main(int argc, char** argv)
   proxypp::log::SetAllLevels(spdlog::level::from_str(opts.global.log_level));
 
   const auto app_logger = proxypp::log::Get(proxypp::log::Module::app);
-  app_logger->trace("set log level to {}", opts.global.log_level);
+  app_logger->debug("using log level {}", opts.global.log_level);
 
   const auto rule_file_path = proxypp::helper::cli::ResolveRuleFilePath(
     *cli_handlers.rule_file_opt, opts.http.rule_file);
@@ -170,16 +184,15 @@ int main(int argc, char** argv)
   auto rule_config = LoadRuleConfig(rule_file_path);
   if(!rule_config)
     {
-      std::cerr << "load rule config failed, "
-                << rule_config.error().message();
+      app_logger->error("program exit with failure");
       return EXIT_FAILURE;
     }
 
   auto rule_engine = InitRuleEngine();
   if(!rule_engine)
     {
-      std::cerr << "init rule engine failed, "
-                << rule_engine.error().message();
+      app_logger->error("program exit with failure");
+      return EXIT_FAILURE;
     }
 
   asio::io_context io;
@@ -198,7 +211,7 @@ int main(int argc, char** argv)
       auto start_result = server->Start();
       if(!start_result)
         {
-          std::cerr << start_result.error().message() << "\n";
+          app_logger->error("program exit with failure");
           return EXIT_FAILURE;
         }
 
@@ -208,10 +221,12 @@ int main(int argc, char** argv)
             opts.http.ready_file, start_result->address, start_result->port);
           if(!write_result)
             {
-              std::cerr << write_result.error().message() << "\n";
+              app_logger->error("program exit with failure");
               return EXIT_FAILURE;
             }
         }
+
+      app_logger->info("proxy++ started");
     }
 
   io.run();

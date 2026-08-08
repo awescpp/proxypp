@@ -4,6 +4,7 @@
  */
 
 #include "proxypp/script/qjs/evaluator.h"
+#include "proxypp/log/log.h"
 #include "proxypp/script/qjs/context.h"
 #include "proxypp/script/qjs/detail/exception_message.h"
 #include "proxypp/script/qjs/detail/value_access.h"
@@ -11,11 +12,16 @@
 #include <format>
 #include <quickjs.h>
 
+namespace
+{
+  const auto logger = proxypp::log::Get(proxypp::log::Module::qjs);
+}
+
 proxypp::Result<proxypp::script::qjs::Value>
 proxypp::script::qjs::Evaluator::Eval(Context& context, std::string_view expr,
                                       std::string_view file_name)
 {
-  JSContext* qjs_ctx = context.NativeHandle();
+  JSContext* qjs_ctx = context.GetNativeHandle();
   if(qjs_ctx == nullptr)
     {
       return Unexpected(Error { Errc::InvalidContext });
@@ -29,10 +35,16 @@ proxypp::script::qjs::Evaluator::Eval(Context& context, std::string_view expr,
     {
       const std::string message = detail::GetExceptionMessage(*qjs_ctx);
       JS_FreeValue(qjs_ctx, result);
+
+      logger->error(R"(failed to evaluate: expr="{}", error="{}")", expr,
+                    message);
+
       return Unexpected(
         Error { Errc::ExecuteScriptFailed,
                 std::format("{}, from {}", message, file_name_str) });
     }
+
+  logger->trace(R"(expression evaluated: expr="{}")", expr);
 
   return detail::AdoptValue(*qjs_ctx, result);
 }

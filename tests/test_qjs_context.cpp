@@ -26,7 +26,7 @@ namespace proxypp::script::qjs::test
     {
       auto runtime = Runtime::Create();
       BOOST_REQUIRE(runtime.has_value());
-      BOOST_REQUIRE(runtime->NativeHandle() != nullptr);
+      BOOST_REQUIRE(runtime->GetNativeHandle() != nullptr);
       return std::move(*runtime);
     }
 
@@ -34,7 +34,7 @@ namespace proxypp::script::qjs::test
     {
       auto context = Context::Create(runtime);
       BOOST_REQUIRE(context.has_value());
-      BOOST_REQUIRE(context->NativeHandle() != nullptr);
+      BOOST_REQUIRE(context->GetNativeHandle() != nullptr);
       return std::move(*context);
     }
   }
@@ -46,7 +46,7 @@ namespace proxypp::script::qjs::test
     auto runtime = MakeRuntime();
     auto context = Context::Create(runtime);
     BOOST_TEST(context.has_value());
-    BOOST_TEST(context->NativeHandle() != nullptr);
+    BOOST_TEST(context->GetNativeHandle() != nullptr);
   }
 
   BOOST_AUTO_TEST_CASE(context_should_be_move_only)
@@ -63,12 +63,12 @@ namespace proxypp::script::qjs::test
   {
     auto runtime = MakeRuntime();
     auto context = MakeContext(runtime);
-    auto* native_handle = context.NativeHandle();
+    auto* native_handle = context.GetNativeHandle();
     Context moved { std::move(context) };
-    BOOST_TEST(moved.NativeHandle() == native_handle);
-    BOOST_TEST(moved.NativeHandle() != nullptr);
-    // after being moved from, the old object's NativeHandle should be nullptr
-    BOOST_TEST(context.NativeHandle() == nullptr);
+    BOOST_TEST(moved.GetNativeHandle() == native_handle);
+    BOOST_TEST(moved.GetNativeHandle() != nullptr);
+    // after being moved from, the old object's GetNativeHandle should be nullptr
+    BOOST_TEST(context.GetNativeHandle() == nullptr);
   }
 
   BOOST_AUTO_TEST_CASE(
@@ -77,22 +77,22 @@ namespace proxypp::script::qjs::test
     auto runtime = MakeRuntime();
     auto lhs_ctx = MakeContext(runtime);
     auto rhs_ctx = MakeContext(runtime);
-    auto* lhs_old_native_handle = lhs_ctx.NativeHandle();
-    auto* rhs_native_handle = rhs_ctx.NativeHandle();
+    auto* lhs_old_native_handle = lhs_ctx.GetNativeHandle();
+    auto* rhs_native_handle = rhs_ctx.GetNativeHandle();
 
     lhs_ctx = std::move(rhs_ctx);
 
-    BOOST_TEST(lhs_ctx.NativeHandle() == rhs_native_handle);
-    BOOST_TEST(lhs_ctx.NativeHandle() != nullptr);
-    BOOST_TEST(lhs_ctx.NativeHandle() != lhs_old_native_handle);
-    BOOST_TEST(rhs_ctx.NativeHandle() == nullptr);
+    BOOST_TEST(lhs_ctx.GetNativeHandle() == rhs_native_handle);
+    BOOST_TEST(lhs_ctx.GetNativeHandle() != nullptr);
+    BOOST_TEST(lhs_ctx.GetNativeHandle() != lhs_old_native_handle);
+    BOOST_TEST(rhs_ctx.GetNativeHandle() == nullptr);
   }
 
   BOOST_AUTO_TEST_CASE(context_self_move_assign_should_keep_context_valid)
   {
     auto runtime = MakeRuntime();
     auto context = MakeContext(runtime);
-    auto* native_handle = context.NativeHandle();
+    auto* native_handle = context.GetNativeHandle();
 
 #if defined(__clang__)
 #pragma clang diagnostic push
@@ -105,8 +105,8 @@ namespace proxypp::script::qjs::test
 #pragma clang diagnostic pop
 #endif
 
-    BOOST_TEST(context.NativeHandle() == native_handle);
-    BOOST_TEST(context.NativeHandle() != nullptr);
+    BOOST_TEST(context.GetNativeHandle() == native_handle);
+    BOOST_TEST(context.GetNativeHandle() != nullptr);
   }
 
   BOOST_AUTO_TEST_SUITE_END()

@@ -51,5 +51,6 @@ namespace proxypp ::core
 
     tcp::acceptor acceptor_;
     TcpServerOptions options_;
+    std::atomic_uint64_t next_session_id_ { 1 };
   };
 } // namespace proxypp::core

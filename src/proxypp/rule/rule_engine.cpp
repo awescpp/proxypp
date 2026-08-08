@@ -4,9 +4,15 @@
  */
 
 #include "proxypp/rule/rule_engine.h"
+#include "proxypp/log/log.h"
 #include "proxypp/rule/error.h"
 #include "proxypp/script/qjs.h"
 #include <format>
+
+namespace
+{
+  const auto logger = proxypp::log::Get(proxypp::log::Module::rule);
+}
 
 namespace proxypp::rule
 {
@@ -37,6 +43,9 @@ namespace proxypp::rule
                                             runtime.error().message())));
       }
     auto impl = std::make_unique<Impl>(std::move(*runtime));
+
+    logger->debug("RuleEngine created");
+
     return RuleEngine { std::move(impl) };
   }
 
@@ -60,19 +69,46 @@ namespace proxypp::rule
 
     if(!result)
       {
-        return Unexpected(Error(Errc::MatchEvaluationFailed,
-                                std::format("evaluate \"{}\" failed: {}", expr,
-                                            result.error().message())));
+        logger->error(
+          R"(failed to evaluate match expression: expr="{}", error="{}")",
+          expr, result.error().message());
+
+        return Unexpected(Error {
+          Errc::MatchEvaluationFailed,
+          std::format(
+            R"(failed to evaluate match expression: expr="{}", error="{}")",
+            expr, result.error().message()) });
       }
 
     if(!result->IsBool())
       {
-        return Unexpected(Error(
+        logger->error(R"(match expression result is not boolean: expr="{}")",
+                      expr);
+
+        return Unexpected(Error {
           Errc::MatchResultNotBoolean,
-          std::format("evaluate \"{}\" failed, result is not a bool value",
-                      expr)));
+          std::format(R"(match expression result is not boolean: expr="{}")",
+                      expr) });
       }
-    return result->ToBool();
+
+    const auto bool_val = result->ToBool();
+    if(!bool_val)
+      {
+        logger->error(
+          R"(failed to convert match expression result to boolean: expr="{}", error="{}")",
+          expr, bool_val.error().message());
+
+        return Unexpected(Error {
+          Errc::MatchEvaluationFailed,
+          std::format(
+            R"(failed to convert match expression result to boolean: expr="{}", error="{}")",
+            expr, bool_val.error().message()) });
+      }
+
+    logger->trace(R"(match expression evaluated: expr="{}", result={})", expr,
+                  *bool_val);
+
+    return *bool_val;
   }
 
 }

@@ -25,7 +25,7 @@ namespace proxypp::script::qjs::test
     {
       auto runtime = Runtime::Create();
       BOOST_REQUIRE(runtime.has_value());
-      BOOST_REQUIRE(runtime->NativeHandle() != nullptr);
+      BOOST_REQUIRE(runtime->GetNativeHandle() != nullptr);
       // Runtime is non-copyable and can only be moved
       return std::move(*runtime);
     }
@@ -37,7 +37,7 @@ namespace proxypp::script::qjs::test
   {
     auto runtime = Runtime::Create();
     BOOST_REQUIRE(runtime.has_value());
-    BOOST_TEST(runtime->NativeHandle() != nullptr);
+    BOOST_TEST(runtime->GetNativeHandle() != nullptr);
   }
 
   BOOST_AUTO_TEST_CASE(runtime_should_be_move_only)
@@ -53,11 +53,11 @@ namespace proxypp::script::qjs::test
   BOOST_AUTO_TEST_CASE(runtime_move_construct_should_transfer_runtime_ownership)
   {
     auto runtime = MakeRuntime();
-    auto* native_handle = runtime.NativeHandle();
+    auto* native_handle = runtime.GetNativeHandle();
     Runtime moved { std::move(runtime) };
-    BOOST_TEST(moved.NativeHandle() == native_handle);
-    BOOST_TEST(moved.NativeHandle() != nullptr);
-    BOOST_TEST(runtime.NativeHandle() == nullptr);
+    BOOST_TEST(moved.GetNativeHandle() == native_handle);
+    BOOST_TEST(moved.GetNativeHandle() != nullptr);
+    BOOST_TEST(runtime.GetNativeHandle() == nullptr);
   }
 
   BOOST_AUTO_TEST_CASE(
@@ -65,19 +65,19 @@ namespace proxypp::script::qjs::test
   {
     auto lhs = MakeRuntime();
     auto rhs = MakeRuntime();
-    auto* old_native_handle = lhs.NativeHandle();
-    auto* rhs_native_handle = rhs.NativeHandle();
+    auto* old_native_handle = lhs.GetNativeHandle();
+    auto* rhs_native_handle = rhs.GetNativeHandle();
     lhs = std::move(rhs);
-    BOOST_TEST(lhs.NativeHandle() == rhs_native_handle);
-    BOOST_TEST(lhs.NativeHandle() != nullptr);
-    BOOST_TEST(lhs.NativeHandle() != old_native_handle);
-    BOOST_TEST(rhs.NativeHandle() == nullptr);
+    BOOST_TEST(lhs.GetNativeHandle() == rhs_native_handle);
+    BOOST_TEST(lhs.GetNativeHandle() != nullptr);
+    BOOST_TEST(lhs.GetNativeHandle() != old_native_handle);
+    BOOST_TEST(rhs.GetNativeHandle() == nullptr);
   }
 
   BOOST_AUTO_TEST_CASE(runtime_self_assign_should_keep_runtime_valid)
   {
     auto runtime = MakeRuntime();
-    auto native_handle = runtime.NativeHandle();
+    auto native_handle = runtime.GetNativeHandle();
 
 #if defined(__clang__)
 #pragma clang diagnostic push
@@ -90,8 +90,8 @@ namespace proxypp::script::qjs::test
 #pragma clang diagnostic pop
 #endif
 
-    BOOST_TEST(runtime.NativeHandle() == native_handle);
-    BOOST_TEST(runtime.NativeHandle() != nullptr);
+    BOOST_TEST(runtime.GetNativeHandle() == native_handle);
+    BOOST_TEST(runtime.GetNativeHandle() != nullptr);
   }
 
   BOOST_AUTO_TEST_SUITE_END()

@@ -4,6 +4,12 @@
  */
 
 #include "proxypp/http/adapter/beast_request_adapter.h"
+#include "proxypp/log/log.h"
+
+namespace
+{
+  const auto logger = proxypp::log::Get(proxypp::log::Module::rule);
+}
 
 proxypp::http::adapter::BeastRequestAdapter::BeastRequestAdapter(
   http_::request_header<>& request)
@@ -40,14 +46,22 @@ void proxypp::http::adapter::BeastRequestAdapter::SetHeader(
   std::string_view name, std::string_view value)
 {
   request_.set(name, value);
+  logger->trace(R"(HTTP request header set: name="{}")", name);
 }
 
 void proxypp::http::adapter::BeastRequestAdapter::AddHeader(
   std::string_view name, std::string_view value)
 {
-  if(!request_.contains(name))
+  if(request_.contains(name))
+    {
+      logger->trace(
+        R"(HTTP request header add skipped: name="{}", reason="header already exists")",
+        name);
+    }
+  else
     {
       request_.set(name, value);
+      logger->trace(R"(HTTP request header added: name="{}")", name);
     }
 }
 
@@ -57,13 +71,30 @@ void proxypp::http::adapter::BeastRequestAdapter::ReplaceHeader(
   if(request_.contains(name))
     {
       request_.set(name, value);
+      logger->trace(R"(HTTP request header replaced: name="{}")", name);
+    }
+  else
+    {
+      logger->trace(
+        R"(HTTP request header replace skipped: name="{}", reason="header does not exist")",
+        name);
     }
 }
 
 void proxypp::http::adapter::BeastRequestAdapter::RemoveHeader(
   std::string_view name)
 {
-  request_.erase(name);
+  if(const auto count = request_.erase(name); count > 0)
+    {
+      logger->trace(R"(HTTP request header removed: name="{}", count={})",
+                    name, count);
+    }
+  else
+    {
+      logger->trace(
+        R"(HTTP request header remove skipped: name="{}", reason="header does not exist")",
+        name);
+    }
 }
 
 std::vector<proxypp::rule::http::Header>

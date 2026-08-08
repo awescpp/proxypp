@@ -4,14 +4,22 @@
  */
 
 #include "proxypp/script/qjs/value.h"
+#include "proxypp/log/log.h"
 #include "proxypp/script/qjs/context.h"
 #include "proxypp/script/qjs/detail/exception_message.h"
 #include "proxypp/script/qjs/detail/value_access.h"
 #include "proxypp/script/qjs/error.h"
+#include <format>
 #include <quickjs.h>
 
 namespace proxypp::script::qjs
 {
+
+  namespace
+  {
+    const auto logger = log::Get(log::Module::qjs);
+  }
+
   class Value::Impl final
   {
   public:
@@ -76,18 +84,37 @@ namespace proxypp::script::qjs
 
   Value& Value::operator=(Value&& other) noexcept = default;
 
+  decltype(Unexpected(std::declval<Error>()))
+  Value::HandleInvalidValue(std::string_view message, std::string_view reason)
+  {
+    logger->error(R"({}, reason="{}")", message, reason);
+    return Unexpected(Error { Errc::InvalidValue, std::string { reason } });
+  }
+
+  decltype(Unexpected(std::declval<Error>()))
+  Value::HandleContextMismatch(std::string_view message)
+  {
+    logger->error(R"({}, reason="QuickJS Context mismatch")", message);
+    return Unexpected(Error(Errc::ContextMismatch));
+  }
+
   Result<Value> Value::GlobalObject(Context& context)
   {
-    JSContext* qjs_ctx = context.NativeHandle();
+    JSContext* qjs_ctx = context.GetNativeHandle();
     if(qjs_ctx == nullptr)
       {
         return Unexpected(Error { Errc::InvalidContext });
       }
+
     JSValue js_val = JS_GetGlobalObject(qjs_ctx);
     if(JS_IsException(js_val))
       {
         const auto message = detail::GetExceptionMessage(*qjs_ctx);
         JS_FreeValue(qjs_ctx, js_val);
+
+        logger->error(R"(failed to get QuickJS global object: error="{}")",
+                      message);
+
         return Unexpected(Error { Errc::JsInternalError, message });
       }
 
@@ -96,7 +123,7 @@ namespace proxypp::script::qjs
 
   Result<Value> Value::Undefined(Context& context)
   {
-    JSContext* qjs_ctx = context.NativeHandle();
+    JSContext* qjs_ctx = context.GetNativeHandle();
     if(qjs_ctx == nullptr)
       {
         return Unexpected(Error { Errc::InvalidContext });
@@ -106,7 +133,7 @@ namespace proxypp::script::qjs
 
   Result<Value> Value::Null(Context& context)
   {
-    JSContext* qjs_ctx = context.NativeHandle();
+    JSContext* qjs_ctx = context.GetNativeHandle();
     if(qjs_ctx == nullptr)
       {
         return Unexpected(Error { Errc::InvalidContext });
@@ -116,7 +143,7 @@ namespace proxypp::script::qjs
 
   Result<Value> Value::Bool(Context& context, bool value)
   {
-    JSContext* qjs_ctx = context.NativeHandle();
+    JSContext* qjs_ctx = context.GetNativeHandle();
     if(qjs_ctx == nullptr)
       {
         return Unexpected(Error { Errc::InvalidContext });
@@ -126,7 +153,7 @@ namespace proxypp::script::qjs
 
   Result<Value> Value::Int32(Context& context, std::int32_t value)
   {
-    JSContext* qjs_ctx = context.NativeHandle();
+    JSContext* qjs_ctx = context.GetNativeHandle();
     if(qjs_ctx == nullptr)
       {
         return Unexpected(Error { Errc::InvalidContext });
@@ -136,7 +163,7 @@ namespace proxypp::script::qjs
 
   Result<Value> Value::String(Context& context, std::string_view value)
   {
-    JSContext* qjs_ctx = context.NativeHandle();
+    JSContext* qjs_ctx = context.GetNativeHandle();
     if(qjs_ctx == nullptr)
       {
         return Unexpected(Error { Errc::InvalidContext });
@@ -149,6 +176,11 @@ namespace proxypp::script::qjs
       {
         const std::string message = detail::GetExceptionMessage(*qjs_ctx);
         JS_FreeValue(qjs_ctx, js_val);
+
+        logger->error(
+          R"(failed to create String value: length={}, error="{}")",
+          value.size(), message);
+
         return Unexpected(Error { Errc::JsInternalError, message });
       }
 
@@ -157,7 +189,7 @@ namespace proxypp::script::qjs
 
   Result<Value> Value::Object(Context& context)
   {
-    JSContext* qjs_ctx = context.NativeHandle();
+    JSContext* qjs_ctx = context.GetNativeHandle();
     if(qjs_ctx == nullptr)
       {
         return Unexpected(Error { Errc::InvalidContext });
@@ -168,6 +200,9 @@ namespace proxypp::script::qjs
       {
         const auto message = detail::GetExceptionMessage(*qjs_ctx);
         JS_FreeValue(qjs_ctx, js_val);
+
+        logger->error(R"(failed to create Object: error="{}")", message);
+
         return Unexpected(Error(Errc::JsInternalError, message));
       }
     return detail::AdoptValue(*qjs_ctx, js_val);
@@ -175,7 +210,7 @@ namespace proxypp::script::qjs
 
   Result<Value> Value::Array(Context& context)
   {
-    JSContext* qjs_ctx = context.NativeHandle();
+    JSContext* qjs_ctx = context.GetNativeHandle();
     if(qjs_ctx == nullptr)
       {
         return Unexpected(Error(Errc::InvalidContext));
@@ -185,6 +220,9 @@ namespace proxypp::script::qjs
       {
         const auto message = detail::GetExceptionMessage(*qjs_ctx);
         JS_FreeValue(qjs_ctx, array_val);
+
+        logger->error(R"(failed to create Array: error="{}")", message);
+
         return Unexpected(Error(Errc::JsInternalError, message));
       }
     return detail::AdoptValue(*qjs_ctx, array_val);
@@ -239,12 +277,17 @@ namespace proxypp::script::qjs
   {
     if(!IsValid())
       {
-        return Unexpected(Error(Errc::InvalidValue));
+        return HandleInvalidValue("failed to convert value to Boolean",
+                                  "value is invalid");
       }
     const int result = JS_ToBool(impl_->Context(), impl_->NativeHandle());
     if(result < 0)
       {
         const auto message = detail::GetExceptionMessage(*impl_->Context());
+
+        logger->error(R"(failed to convert value to Boolean: error="{}")",
+                      message);
+
         return Unexpected(Error(Errc::ConvertValueFailed, message));
       }
     return result != 0;
@@ -254,12 +297,17 @@ namespace proxypp::script::qjs
   {
     if(!IsValid())
       {
-        return Unexpected(Error { Errc::InvalidValue });
+        return HandleInvalidValue("failed to convert value to Int32",
+                                  "value is invalid");
       }
     std::int32_t result = 0;
     if(JS_ToInt32(impl_->Context(), &result, impl_->NativeHandle()) < 0)
       {
         const auto message = detail::GetExceptionMessage(*impl_->Context());
+
+        logger->error(R"(failed to convert value to Int32: error="{}")",
+                      message);
+
         return Unexpected(Error { Errc::ConvertValueFailed, message });
       }
     return result;
@@ -269,14 +317,20 @@ namespace proxypp::script::qjs
   {
     if(!IsValid())
       {
-        return Unexpected(Error { Errc::InvalidValue });
+        return HandleInvalidValue("failed to convert value to String",
+                                  "value is invalid");
       }
+
     size_t len = 0;
     const char* text
       = JS_ToCStringLen(impl_->Context(), &len, impl_->NativeHandle());
     if(text == nullptr)
       {
         const auto message = detail::GetExceptionMessage(*impl_->Context());
+
+        logger->error(R"(failed to convert value to String: error="{}")",
+                      message);
+
         return Unexpected(Error { Errc::ConvertValueFailed, message });
       }
 
@@ -289,7 +343,9 @@ namespace proxypp::script::qjs
   {
     if(!IsValid())
       {
-        return Unexpected(Error { Errc::InvalidValue });
+        return HandleInvalidValue(
+          std::format(R"(failed to get propery: property_name="{}")", name),
+          "target is invalid");
       }
 
     const std::string property_name { name };
@@ -301,6 +357,9 @@ namespace proxypp::script::qjs
 
         JS_FreeValue(impl_->Context(), property_val);
 
+        logger->error(R"(failed to get property: name="{}", error="{}")", name,
+                      message);
+
         return Unexpected(Error { Errc::GetPropertyFailed, message });
       }
     return detail::AdoptValue(*impl_->Context(), property_val);
@@ -308,21 +367,31 @@ namespace proxypp::script::qjs
 
   Result<void> Value::SetProperty(std::string_view name, Value value)
   {
-    if(!IsValid() || !IsObject())
+    if(!IsValid())
       {
-        return Unexpected(
-          Error { Errc::InvalidValue, "target is not a valid object" });
+        return HandleInvalidValue(
+          std::format(R"(failed to set property: property_name="{}")", name),
+          "target is invalid");
+      }
+
+    if(!IsObject())
+      {
+        return HandleInvalidValue(
+          std::format(R"(failed to set property: property_name="{}")", name),
+          "target is not an object");
       }
 
     if(!value.IsValid())
       {
-        return Unexpected(
-          Error { Errc::InvalidValue, "property value is invalid" });
+        return HandleInvalidValue(
+          std::format(R"(failed to set property: property_name="{}")", name),
+          "property value is invalid");
       }
 
     if(impl_->Context() != value.impl_->Context())
       {
-        return Unexpected(Error { Errc::ContextMismatch });
+        return HandleContextMismatch(
+          std::format(R"(failed to set property: property_name="{}")", name));
       }
 
     const std::string property_name { name };
@@ -333,6 +402,11 @@ namespace proxypp::script::qjs
        < 0)
       {
         const auto message = detail::GetExceptionMessage(*impl_->Context());
+
+        logger->error(
+          R"(failed to set property: property_name="{}", error="{}")", name,
+          message);
+
         return Unexpected(Error { Errc::SetPropertyFailed, message });
       }
 
@@ -341,21 +415,31 @@ namespace proxypp::script::qjs
 
   Result<void> Value::SetElement(std::uint32_t index, Value value)
   {
-    if(!IsValid() || !IsArray())
+    if(!IsValid())
       {
-        return Unexpected(
-          Error { Errc::InvalidValue, "target is not a valid array" });
+        return HandleInvalidValue(
+          std::format(R"(failed to set element to array: index={})", index),
+          "target is invalid");
+      }
+
+    if(!IsArray())
+      {
+        return HandleInvalidValue(
+          std::format(R"(failed to set element to array: index={})", index),
+          "target is not an array");
       }
 
     if(!value.IsValid())
       {
-        return Unexpected(
-          Error { Errc::InvalidValue, "value to set in array is invalid" });
+        return HandleInvalidValue(
+          std::format(R"(failed to set element to array: index={})", index),
+          "value to set is invalid");
       }
 
     if(impl_->Context() != value.impl_->Context())
       {
-        return Unexpected(Error { Errc::ContextMismatch });
+        return HandleContextMismatch(
+          std::format("failed to set element to array: index={}", index));
       }
 
     JSValue released_val = value.impl_->Release();
@@ -365,6 +449,11 @@ namespace proxypp::script::qjs
        < 0)
       {
         const auto message = detail::GetExceptionMessage(*impl_->Context());
+
+        logger->error(
+          R"(failed to set element to array: index={}, error="{}")", index,
+          message);
+
         return Unexpected(Error { Errc::SetElementFailed, message });
       }
     return {};
@@ -372,10 +461,18 @@ namespace proxypp::script::qjs
 
   Result<Value> Value::GetElement(std::uint32_t index) const
   {
-    if(!IsValid() || !IsArray())
+    if(!IsValid())
       {
-        return Unexpected(
-          Error { Errc::InvalidValue, "target is not a valid array" });
+        return HandleInvalidValue(
+          std::format("failed to get element from array: index={}", index),
+          "target is invalid");
+      }
+
+    if(!IsArray())
+      {
+        return HandleInvalidValue(
+          std::format("failed to get element from array: index={}", index),
+          "target is not an array");
       }
 
     JSValue js_value
@@ -384,6 +481,11 @@ namespace proxypp::script::qjs
       {
         const auto message = detail::GetExceptionMessage(*impl_->Context());
         JS_FreeValue(impl_->Context(), js_value);
+
+        logger->error(
+          R"(failed to get element from array: index={}, error="{}")", index,
+          message);
+
         return Unexpected(Error { Errc::GetElementFailed, message });
       }
     return detail::AdoptValue(*impl_->Context(), js_value);
@@ -391,10 +493,16 @@ namespace proxypp::script::qjs
 
   Result<std::uint32_t> Value::ArrayLength() const
   {
-    if(!IsValid() || !IsArray())
+    if(!IsValid())
       {
-        return Unexpected(
-          Error { Errc::InvalidValue, "value is not a valid array" });
+        return HandleInvalidValue("failed to get array length",
+                                  "target is invalid");
+      }
+
+    if(!IsArray())
+      {
+        return HandleInvalidValue("failed to get array length",
+                                  "target is not an array");
       }
 
     JSValue js_value
@@ -404,6 +512,9 @@ namespace proxypp::script::qjs
       {
         const auto message = detail::GetExceptionMessage(*impl_->Context());
         JS_FreeValue(impl_->Context(), js_value);
+
+        logger->error(R"(failed to get array length: error="{}")", message);
+
         return Unexpected(Error { Errc::GetPropertyFailed, message });
       }
 
@@ -416,6 +527,9 @@ namespace proxypp::script::qjs
 
     if(!adopted_value->IsNumber())
       {
+        logger->error(
+          R"(failed to get array length: reason="array length is not a number")");
+
         return Unexpected(
           Error(Errc::JsInternalError, "array length is not a number"));
       }
@@ -440,6 +554,9 @@ namespace proxypp::script::qjs::detail
     if(!impl)
       {
         JS_FreeValue(&context, value);
+
+        logger->error(R"(failed to adopt QuickJS value)");
+
         return Unexpected(
           Error { proxypp::Errc::InternalError, "failed to adopt JS value" });
       }

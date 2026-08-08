@@ -19,6 +19,9 @@ using socket_t = beast::tcp_stream;
 
 namespace proxypp::http
 {
+
+  using SessionId = std::uint64_t;
+
   class HttpProxySession
       : public std::enable_shared_from_this<HttpProxySession>
   {
@@ -26,7 +29,7 @@ namespace proxypp::http
     // rvalue reference here means the caller must transfer ownership of the
     // socket.
     explicit HttpProxySession(
-      asio::ip::tcp::socket&& client_sock,
+      SessionId session_id, asio::ip::tcp::socket&& client_sock,
       std::shared_ptr<rule::RuleEngine> rule_engine,
       std::optional<rule::http::Config> rule_http_config);
 
@@ -182,6 +185,10 @@ namespace proxypp::http
     ForwardUntilEof(beast::flat_buffer& read_buffer, ForwardPeer from_peer,
                     ForwardPeer target_peer);
 
+    std::string GetRemoteEndpointStr(const tcp::socket& socket);
+
+    void CloseSocket(tcp::socket& socket, std::string_view peer);
+
     void CloseRemote();
 
     void CloseClient();
@@ -202,6 +209,7 @@ namespace proxypp::http
 
     RemoteConnectionState remote_state_;
     bool closed_ = false;
+    SessionId session_id_ = 0;
   };
 
 } // namespace proxypp::http

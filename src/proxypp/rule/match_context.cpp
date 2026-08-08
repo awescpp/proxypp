@@ -4,8 +4,14 @@
  */
 
 #include "proxypp/rule/match_context.h"
+#include "proxypp/log/log.h"
 #include "proxypp/rule/error.h"
 #include "proxypp/script/qjs/value.h"
+
+namespace
+{
+  const auto logger = proxypp::log::Get(proxypp::log::Module::rule);
+}
 
 namespace proxypp::rule
 {
@@ -25,6 +31,9 @@ namespace proxypp::rule
   Result<MatchContext> MatchContext::Create(script::qjs::Context context)
   {
     auto impl = std::make_unique<Impl>(std::move(context));
+
+    logger->trace("MatchContext created");
+
     return MatchContext { std::move(impl) };
   }
 
@@ -43,12 +52,32 @@ namespace proxypp::rule
   Result<void>
   MatchContext::AddObject(std::string_view name, script::qjs::Value object)
   {
-    if(!object.IsValid() || !object.IsObject())
+    if(!object.IsValid())
       {
+        logger->error(
+          R"(failed to add object to context: name="{}", reason="value is invalid")",
+          name);
+
+        return Unexpected(
+          Error(Errc::RuleContextPreparationFailed, "value is invalid"));
+      }
+
+    if(!object.IsObject())
+      {
+        logger->error(
+          R"(failed to add object to context: name="{}", reason="value is not an object")",
+          name);
+
         return Unexpected(
           Error(Errc::RuleContextPreparationFailed, "value is not an object"));
       }
-    return AddGlobalValue(name, std::move(object));
+
+    if(const auto result = AddGlobalValue(name, std::move(object)); !result)
+      {
+        return result;
+      }
+
+    return {};
   }
 
   Result<void>

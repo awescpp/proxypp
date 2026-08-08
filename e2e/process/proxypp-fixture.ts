@@ -11,7 +11,15 @@ export function setupProxyppProcess(ruleFile?: string) {
   beforeEach(async () => {
     proxypp = await startProxyppProcess({
       ruleFile,
-      args: ['http', '--bind', '127.0.0.1', '--port', '0'],
+      args: [
+        'http',
+        '--bind',
+        '127.0.0.1',
+        '--port',
+        '0',
+        '--log-level',
+        'trace',
+      ],
     })
 
     onTestFailed(async () => {

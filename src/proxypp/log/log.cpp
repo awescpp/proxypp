@@ -15,8 +15,7 @@ namespace proxypp::log
 {
   namespace
   {
-    constexpr auto kConsolePattern
-      = "[%H:%M:%S.%e] [%8t] [%-4n] [%^%-6l%$] %v";
+    constexpr auto kConsolePattern = "%H:%M:%S.%e %8t %^[%-4n] [%-6l] %v%$";
     constexpr auto kFilePattern
       = "[%Y-%m-%d %H:%M:%S.%e] [%8t] [%-4n] [%-6l] %v";
 
@@ -27,9 +26,10 @@ namespace proxypp::log
 
     std::shared_ptr<spdlog::sinks::stdout_color_sink_mt> MakeConsoleSink()
     {
-      auto sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-      sink->set_pattern(kConsolePattern);
-      return sink;
+      auto console_sink
+        = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+      console_sink->set_pattern(kConsolePattern);
+      return console_sink;
     }
 
     std::shared_ptr<spdlog::sinks::rotating_file_sink_mt>
