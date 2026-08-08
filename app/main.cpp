@@ -9,12 +9,13 @@
 #include "proxypp/log/log.h"
 #include "proxypp/result.h"
 #include "proxypp/rule/rule_file.h"
-#include "string"
+#include "proxypp/version.h"
 #include <CLI/CLI.hpp>
 #include <boost/dll.hpp>
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <string>
 
 namespace
 {
@@ -52,14 +53,17 @@ namespace
 
   CliHandles ConfigureCli(CLI::App& app, AppOpts& opts)
   {
-    app.name("proxy++");
+    app.name(std::string { proxypp::kName });
 
     app.add_option("--log-level", opts.global.log_level, "Set log level")
       ->default_val(opts.global.log_level)
       ->check(CLI::IsMember(
         { "trace", "debug", "info", "error", "critical", "off" }));
 
-    app.set_version_flag("-V,--version", "V1.0.0");
+    app.set_version_flag("-V,--version",
+                         std::format("{} {} ({})", proxypp::kName,
+                                     proxypp::kVersion,
+                                     proxypp::kGitCommit.substr(0, 7)));
 
     CLI::App* http_command = app.add_subcommand("http", "start http proxy");
     http_command->fallthrough();
@@ -226,7 +230,8 @@ int main(int argc, char** argv)
             }
         }
 
-      app_logger->info("proxy++ started");
+      app_logger->info("proxy++ started, version={}", proxypp::kVersion);
+      app_logger->debug("commit: {}", proxypp::kGitCommit);
     }
 
   io.run();

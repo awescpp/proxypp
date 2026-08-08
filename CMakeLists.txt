@@ -147,9 +147,18 @@ target_link_libraries(proxypp_core PUBLIC
         proxypp::http
 )
 
+execute_process(COMMAND git rev-parse HEAD OUTPUT_VARIABLE GIT_COMMIT OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/version.h.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/include/proxypp/version.h"
+        @ONLY
+)
+
 # proxy++ executable
 if (PROXYPP_BUILD_APP)
     add_executable(proxy++ app/main.cpp)
+    target_include_directories(proxy++ PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated/include")
     target_link_libraries(proxy++ PRIVATE proxypp::core CLI11::CLI11)
 endif ()
 

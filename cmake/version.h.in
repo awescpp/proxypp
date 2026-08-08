@@ -1,0 +1,9 @@
+#pragma once
+
+#include <string_view>
+
+namespace proxypp {
+    inline constexpr std::string_view kName = "proxy++";
+    inline constexpr std::string_view kVersion = "@PROJECT_VERSION@";
+    inline constexpr std::string_view kGitCommit = "@GIT_COMMIT@";
+}
