@@ -12,6 +12,7 @@
     "test:all": "pnpm unittest && pnpm test:e2e",
     "test:e2e:watch": "vitest --config vitest.config.ts",
     "coverage": "node scripts/coverage.mjs",
+    "package:source": "node scripts/package.mjs source -p windows-msvc-debug-local",
     "format": "prettier --write \"e2e/**/*.ts\" \"*.ts\" \"*.json\" \"*.md\"",
     "format:check": "prettier --check \"e2e/**/*.ts\" \"*.ts\" \"*.json\" \"*.md\"",
     "prepare": "simple-git-hooks",

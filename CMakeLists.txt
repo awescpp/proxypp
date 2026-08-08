@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.27)
-project(proxypp LANGUAGES CXX)
+project(proxypp LANGUAGES CXX VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -157,3 +157,20 @@ include(CTest)
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif ()
+
+set(CPACK_SOURCE_GENERATOR "ZIP;TGZ")
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "proxypp-${PROJECT_VERSION}-src")
+set(CPACK_SOURCE_IGNORE_FILES
+        "/\\.git/"
+        "/\\.github/"
+        "/out/"
+        "/logs/"
+        "/build/"
+        "/node_modules/"
+        "/\\.idea/"
+        "/\\.vscode/"
+        "/docs/node_modules/"
+        "/docs/.astro/"
+        "/docs/.vscode/"
+)
+include(CPack)
